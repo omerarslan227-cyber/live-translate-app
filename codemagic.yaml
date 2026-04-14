@@ -10,6 +10,10 @@ workflows:
         script: |
           flutter pub get
 
+      - name: Set up code signing on Xcode project
+        script: |
+          xcode-project use-profiles
+
       - name: Build iOS (IPA)
         script: |
           flutter build ipa --release

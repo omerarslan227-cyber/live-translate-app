@@ -12,17 +12,21 @@ workflows:
     scripts:
       - name: Get Flutter packages
         script: |
-          flutter clean
+          cd /Users/builder/clone
+          pwd
+          ls -la
           flutter pub get
 
       - name: Set up code signing
         script: |
+          cd /Users/builder/clone
           xcode-project use-profiles
 
       - name: Build iOS (IPA)
         script: |
+          cd /Users/builder/clone
           flutter build ipa --release
 
     artifacts:
-      - build/ios/ipa/*.ipa
-      - build/ios/archive/*.xcarchive
+      - /Users/builder/clone/build/ios/ipa/*.ipa
+      - /Users/builder/clone/build/ios/archive/*.xcarchive

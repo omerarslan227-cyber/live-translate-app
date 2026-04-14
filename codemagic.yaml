@@ -7,7 +7,7 @@ workflows:
       flutter: stable
       ios_signing:
         distribution_type: development
-        bundle_identifier: com.example.liveTranslateApp.CDY9NL37S7s
+        bundle_identifier: com.example.liveTranslateApp.CDY9NL37S7
 
     scripts:
       - name: Get Flutter packages

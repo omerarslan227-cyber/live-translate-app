@@ -1,0 +1,27 @@
+workflows:
+  ios-release:
+    name: iOS Release Build
+    max_build_duration: 60
+
+    environment:
+      flutter: stable
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: com.omerarslan.livetranslate
+
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles
+
+      - name: Build iOS (IPA)
+        script: |
+          flutter build ipa --release
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - build/ios/archive/*.xcarchive

@@ -6,7 +6,7 @@ workflows:
     environment:
       flutter: stable
       ios_signing:
-        distribution_type: development
+        distribution_type: app_store
         bundle_identifier: com.example.liveTranslateApp.CDY9NL37S7
 
     scripts:

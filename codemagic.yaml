@@ -10,8 +10,15 @@ workflows:
         bundle_identifier: com.omerarslan.livetranslate
 
     scripts:
+      - name: Check project
+        script: |
+          pwd
+          ls
+          ls pubspec.yaml
+
       - name: Get Flutter packages
         script: |
+          flutter clean
           flutter pub get
 
       - name: Set up code signing

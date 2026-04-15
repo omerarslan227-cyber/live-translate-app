@@ -13,8 +13,6 @@ workflows:
       - name: Get Flutter packages
         script: |
           cd /Users/builder/clone
-          pwd
-          ls -la
           flutter pub get
 
       - name: Set up code signing

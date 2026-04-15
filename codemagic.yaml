@@ -9,7 +9,7 @@ workflows:
         bundle_identifier: com.omerarslan.livetranslate
 
     integrations:
-      app_store_connect: uygulama
+      app_store_connect: codemagic
 
     scripts:
       - name: Get packages

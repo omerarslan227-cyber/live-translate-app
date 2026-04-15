@@ -5,6 +5,8 @@ workflows:
 
     environment:
       flutter: stable
+      vars:
+        PROJECT_DIR: /Users/builder/clone
       ios_signing:
         distribution_type: development
         bundle_identifier: com.omerarslan.livetranslate
@@ -12,17 +14,19 @@ workflows:
     scripts:
       - name: Get Flutter packages
         script: |
-          cd /Users/builder/clone
+          cd "$PROJECT_DIR"
+          pwd
+          ls -la
           flutter pub get
 
       - name: Set up code signing
         script: |
-          cd /Users/builder/clone
+          cd "$PROJECT_DIR"
           xcode-project use-profiles
 
       - name: Build iOS (IPA)
         script: |
-          cd /Users/builder/clone
+          cd "$PROJECT_DIR"
           flutter build ipa --release
 
     artifacts:

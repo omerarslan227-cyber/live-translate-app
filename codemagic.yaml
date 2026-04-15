@@ -1,34 +1,33 @@
 workflows:
   ios-release:
     name: iOS Release Build
-    max_build_duration: 60
 
     environment:
       flutter: stable
-      vars:
-        PROJECT_DIR: /Users/builder/clone
       ios_signing:
-        distribution_type: development
+        distribution_type: app_store
         bundle_identifier: com.omerarslan.livetranslate
 
+    integrations:
+      app_store_connect: codemagic
+
     scripts:
-      - name: Get Flutter packages
+      - name: Get packages
         script: |
-          cd "$PROJECT_DIR"
-          pwd
-          ls -la
+          cd /Users/builder/clone
           flutter pub get
 
-      - name: Set up code signing
+      - name: Set signing
         script: |
-          cd "$PROJECT_DIR"
+          cd /Users/builder/clone
           xcode-project use-profiles
 
-      - name: Build iOS (IPA)
+      - name: Build
         script: |
-          cd "$PROJECT_DIR"
+          cd /Users/builder/clone
           flutter build ipa --release
 
-    artifacts:
-      - /Users/builder/clone/build/ios/ipa/*.ipa
-      - /Users/builder/clone/build/ios/archive/*.xcarchive
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

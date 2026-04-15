@@ -1,6 +1,7 @@
 workflows:
   ios-release:
     name: iOS Release Build
+    max_build_duration: 60
 
     environment:
       flutter: stable
@@ -15,6 +16,7 @@ workflows:
       - name: Get packages
         script: |
           cd /Users/builder/clone
+          flutter clean
           flutter pub get
 
       - name: Set signing
@@ -22,10 +24,19 @@ workflows:
           cd /Users/builder/clone
           xcode-project use-profiles
 
-      - name: Build
+      - name: Build IPA
         script: |
           cd /Users/builder/clone
-          flutter build ipa --release
+          flutter build ipa --release --export-method app-store
+
+      - name: Show output
+        script: |
+          cd /Users/builder/clone
+          ls -R build/ios || true
+
+    artifacts:
+      - /Users/builder/clone/build/ios/ipa/*.ipa
+      - /Users/builder/clone/build/ios/archive/*.xcarchive
 
     publishing:
       app_store_connect:

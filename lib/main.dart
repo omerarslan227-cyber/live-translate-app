@@ -1700,7 +1700,10 @@ class _WaveBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final heights = [10.0, 16, 26, 40, 24, 50, 28, 16, 44, 30, 14, 36, 18, 12];
+    final List<double> heights = [
+      10.0, 16.0, 26.0, 40.0, 24.0, 50.0, 28.0,
+      16.0, 44.0, 30.0, 14.0, 36.0, 18.0, 12.0,
+    ];
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: heights

@@ -29,7 +29,11 @@ class LiveTranslateApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+<<<<<<< HEAD
       title: 'BridgeCall',
+=======
+      title: 'Live Translate',
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF050816),
@@ -57,6 +61,7 @@ class AppColors {
   static const yellow = Color(0xFFFBBF24);
 }
 
+<<<<<<< HEAD
 class AppStore {
   static const _historyKey = 'call_history_v1';
   static const _messagesKey = 'message_history_v1';
@@ -255,6 +260,8 @@ class StoredMessage {
       );
 }
 
+=======
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -293,8 +300,13 @@ class _HomeShellState extends State<HomeShell> {
               label: 'Ana Sayfa',
             ),
             NavigationDestination(
+<<<<<<< HEAD
               icon: Icon(Icons.chat_bubble_outline),
               selectedIcon: Icon(Icons.chat_bubble),
+=======
+              icon: Badge(label: Text('3'), child: Icon(Icons.chat_bubble_outline)),
+              selectedIcon: Badge(label: Text('3'), child: Icon(Icons.chat_bubble)),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
               label: 'Mesajlar',
             ),
             NavigationDestination(
@@ -319,6 +331,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     return ValueListenableBuilder<int>(
       valueListenable: appRefresh,
       builder: (context, _, __) {
@@ -423,12 +436,84 @@ class _StatusStrip extends StatelessWidget {
   final String profileName;
 
   const _StatusStrip({required this.profileName});
+=======
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF050816), Color(0xFF071327), Color(0xFF0A1021)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+          children: [
+            Row(
+              children: const [
+                Icon(Icons.translate_rounded, color: AppColors.purple, size: 30),
+                SizedBox(width: 10),
+                Text(
+                  'Live Translate',
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                ),
+                Spacer(),
+                Icon(Icons.settings_outlined, color: Colors.white70),
+              ],
+            ),
+            const SizedBox(height: 18),
+            const _StatusStrip(),
+            const SizedBox(height: 14),
+            const _LastRoomCard(),
+            const SizedBox(height: 18),
+            _ActionButton(
+              title: 'Oda Oluştur',
+              subtitle: 'Yeni bir oda oluştur ve davet et',
+              icon: Icons.add,
+              gradient: const [Color(0xFF9D6BFF), Color(0xFF6D48E6)],
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CreateRoomScreen()),
+                );
+              },
+            ),
+            const SizedBox(height: 14),
+            _ActionButton(
+              title: 'Odaya Katıl',
+              subtitle: 'Kod ile mevcut odaya katıl',
+              icon: Icons.login_rounded,
+              gradient: const [Color(0xFF4F8CFF), Color(0xFF3567FF)],
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const JoinRoomScreen()),
+                );
+              },
+            ),
+            const SizedBox(height: 18),
+            const _DemoCard(),
+            const SizedBox(height: 16),
+            const _RecentConversationsCard(),
+            const SizedBox(height: 16),
+            const _InviteCard(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusStrip extends StatelessWidget {
+  const _StatusStrip();
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
 
   @override
   Widget build(BuildContext context) {
     return _GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       child: Row(
+<<<<<<< HEAD
         children: [
           const Icon(Icons.circle, color: AppColors.green, size: 12),
           const SizedBox(width: 8),
@@ -440,6 +525,16 @@ class _StatusStrip extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           const Text('🔥 Popüler: Türkçe ↔ Rusça', style: TextStyle(color: Colors.white70)),
+=======
+        children: const [
+          Icon(Icons.circle, color: AppColors.green, size: 12),
+          SizedBox(width: 8),
+          Text('38 kişi aktif', style: TextStyle(fontWeight: FontWeight.w600)),
+          Spacer(),
+          Text('🔥 Popüler: Türkçe ↔ Rusça', style: TextStyle(color: Colors.white70)),
+          SizedBox(width: 6),
+          Icon(Icons.chevron_right, color: Colors.white54),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
         ],
       ),
     );
@@ -447,9 +542,13 @@ class _StatusStrip extends StatelessWidget {
 }
 
 class _LastRoomCard extends StatelessWidget {
+<<<<<<< HEAD
   final CallHistoryEntry? lastHistory;
 
   const _LastRoomCard({required this.lastHistory});
+=======
+  const _LastRoomCard();
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
 
   @override
   Widget build(BuildContext context) {
@@ -459,6 +558,7 @@ class _LastRoomCard extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+<<<<<<< HEAD
               children: [
                 const Text('Son oda', style: TextStyle(color: Colors.white60)),
                 const SizedBox(height: 8),
@@ -473,6 +573,14 @@ class _LastRoomCard extends StatelessWidget {
                       : '${lastHistory!.sourceLanguage} ↔ ${lastHistory!.targetLanguage} • ${lastHistory!.durationLabel}',
                   style: const TextStyle(color: Colors.white70),
                 ),
+=======
+              children: const [
+                Text('Son oda', style: TextStyle(color: Colors.white60)),
+                SizedBox(height: 8),
+                Text('oda1', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+                SizedBox(height: 4),
+                Text('• 2 kişi • 00:12:36', style: TextStyle(color: Colors.white70)),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
               ],
             ),
           ),
@@ -482,6 +590,7 @@ class _LastRoomCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
+<<<<<<< HEAD
             onPressed: lastHistory == null
                 ? null
                 : () {
@@ -496,6 +605,20 @@ class _LastRoomCard extends StatelessWidget {
                     );
                   },
             child: Text(lastHistory == null ? 'Hazır Değil' : 'Tekrar Bağlan'),
+=======
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const JoinRoomScreen(
+                    initialRoomName: 'oda1',
+                    initialCode: '123456',
+                  ),
+                ),
+              );
+            },
+            child: const Text('Tekrar Bağlan'),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
           ),
         ],
       ),
@@ -511,9 +634,15 @@ class _DemoCard extends StatelessWidget {
     return _GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+<<<<<<< HEAD
         children: const [
           Row(
             children: [
+=======
+        children: [
+          Row(
+            children: const [
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
               Text(
                 'Canlı Çeviri Denemesi',
                 style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.purple),
@@ -522,10 +651,17 @@ class _DemoCard extends StatelessWidget {
               Text('● Canlı', style: TextStyle(color: AppColors.green)),
             ],
           ),
+<<<<<<< HEAD
           SizedBox(height: 14),
           _DemoLine(from: 'EN', to: 'TR', source: 'Hello, how are you?', target: 'Merhaba, nasılsın?'),
           SizedBox(height: 12),
           _DemoLine(from: 'EN', to: 'TR', source: 'Where are you from?', target: 'Nerelisin?'),
+=======
+          const SizedBox(height: 14),
+          const _DemoLine(from: 'EN', to: 'TR', source: 'Hello, how are you?', target: 'Merhaba, nasılsın?'),
+          const SizedBox(height: 12),
+          const _DemoLine(from: 'EN', to: 'TR', source: 'Where are you from?', target: 'Nerelisin?'),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
         ],
       ),
     );
@@ -568,9 +704,13 @@ class _DemoLine extends StatelessWidget {
 }
 
 class _RecentConversationsCard extends StatelessWidget {
+<<<<<<< HEAD
   final List<CallHistoryEntry> history;
 
   const _RecentConversationsCard({required this.history});
+=======
+  const _RecentConversationsCard();
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
 
   @override
   Widget build(BuildContext context) {
@@ -581,6 +721,7 @@ class _RecentConversationsCard extends StatelessWidget {
             children: const [
               Text('Son Konuşmalar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               Spacer(),
+<<<<<<< HEAD
             ],
           ),
           const SizedBox(height: 14),
@@ -594,6 +735,23 @@ class _RecentConversationsCard extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _ConversationTile(entry: entry),
                 )),
+=======
+              Text('Tümünü Gör', style: TextStyle(color: AppColors.purple)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const _ConversationTile(
+            name: 'Ahmet',
+            subtitle: 'Türkçe ↔ Rusça',
+            trailing: 'Bugün 14:30',
+          ),
+          const SizedBox(height: 12),
+          const _ConversationTile(
+            name: 'Rusça Pratik',
+            subtitle: '2 kişi • 00:18:22',
+            trailing: 'Dün 20:15',
+          ),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
         ],
       ),
     );
@@ -601,9 +759,21 @@ class _RecentConversationsCard extends StatelessWidget {
 }
 
 class _ConversationTile extends StatelessWidget {
+<<<<<<< HEAD
   final CallHistoryEntry entry;
 
   const _ConversationTile({required this.entry});
+=======
+  final String name;
+  final String subtitle;
+  final String trailing;
+
+  const _ConversationTile({
+    required this.name,
+    required this.subtitle,
+    required this.trailing,
+  });
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
 
   @override
   Widget build(BuildContext context) {
@@ -615,22 +785,33 @@ class _ConversationTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+<<<<<<< HEAD
               Text(entry.roomName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
               const SizedBox(height: 3),
               Text('${entry.sourceLanguage} ↔ ${entry.targetLanguage} • ${entry.durationLabel}', style: const TextStyle(color: Colors.white70)),
+=======
+              Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+              const SizedBox(height: 3),
+              Text(subtitle, style: const TextStyle(color: Colors.white70)),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
             ],
           ),
         ),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
+<<<<<<< HEAD
             Text(entry.relativeLabel, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+=======
+            Text(trailing, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
             const SizedBox(height: 8),
             OutlinedButton(
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.purple),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
+<<<<<<< HEAD
               onPressed: () {
                 Navigator.push(
                   context,
@@ -642,6 +823,9 @@ class _ConversationTile extends StatelessWidget {
                   ),
                 );
               },
+=======
+              onPressed: () {},
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
               child: const Text('Devam Et'),
             ),
           ],
@@ -652,9 +836,13 @@ class _ConversationTile extends StatelessWidget {
 }
 
 class _InviteCard extends StatelessWidget {
+<<<<<<< HEAD
   final CallHistoryEntry? lastHistory;
 
   const _InviteCard({required this.lastHistory});
+=======
+  const _InviteCard();
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
 
   @override
   Widget build(BuildContext context) {
@@ -667,6 +855,7 @@ class _InviteCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: AppColors.border),
       ),
+<<<<<<< HEAD
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -731,6 +920,21 @@ class _InviteCard extends StatelessWidget {
               ),
             ],
           ),
+=======
+      child: Row(
+        children: const [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Arkadaşını Davet Et', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                Text('Davet linkini paylaş, birlikte konuşun!', style: TextStyle(color: Colors.white70)),
+              ],
+            ),
+          ),
+          Icon(Icons.card_giftcard_rounded, size: 38, color: Color(0xFFFF6B6B)),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
         ],
       ),
     );
@@ -742,6 +946,7 @@ class MessagesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     return ValueListenableBuilder<int>(
       valueListenable: appRefresh,
       builder: (context, _, __) {
@@ -786,6 +991,12 @@ class MessagesScreen extends StatelessWidget {
           },
         );
       },
+=======
+    return const _SimplePlaceholderScreen(
+      title: 'Mesajlar',
+      subtitle: 'Sohbet geçmişi ve otomatik çevrilen mesajlar burada listelenir.',
+      icon: Icons.chat_bubble_rounded,
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
     );
   }
 }
@@ -795,6 +1006,7 @@ class HistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     return ValueListenableBuilder<int>(
       valueListenable: appRefresh,
       builder: (context, _, __) {
@@ -857,10 +1069,17 @@ class HistoryScreen extends StatelessWidget {
           },
         );
       },
+=======
+    return const _SimplePlaceholderScreen(
+      title: 'Geçmiş',
+      subtitle: 'Eski odalar, bağlantı süresi ve son konuşmalar bu alanda görünür.',
+      icon: Icons.history_rounded,
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
     );
   }
 }
 
+<<<<<<< HEAD
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -967,15 +1186,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ],
+=======
+class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _SimplePlaceholderScreen(
+      title: 'Profil',
+      subtitle: 'Avatar modu, premium, tercih edilen dil ve hesap ayarları burada yönetilir.',
+      icon: Icons.person,
+    );
+  }
+}
+
+class _SimplePlaceholderScreen extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  const _SimplePlaceholderScreen({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: _GlassCard(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 72, color: AppColors.purple),
+                const SizedBox(height: 18),
+                Text(title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                Text(subtitle, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 16)),
+              ],
+            ),
+          ),
+        ),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
       ),
     );
   }
 }
 
 class CreateRoomScreen extends StatefulWidget {
+<<<<<<< HEAD
   final ProfileData? profile;
 
   const CreateRoomScreen({super.key, this.profile});
+=======
+  const CreateRoomScreen({super.key});
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
 
   @override
   State<CreateRoomScreen> createState() => _CreateRoomScreenState();
@@ -997,11 +1265,14 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   void initState() {
     super.initState();
     codeController.text = _generateRoomCode();
+<<<<<<< HEAD
     final profile = widget.profile;
     if (profile != null) {
       sourceLanguageName = profile.preferredSourceLanguage;
       targetLanguageName = profile.preferredTargetLanguage;
     }
+=======
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
   }
 
   String _generateRoomCode() {
@@ -1009,7 +1280,11 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
     return now.substring(now.length - 6);
   }
 
+<<<<<<< HEAD
   void _openCall() {
+=======
+  void _openCall({bool quick = false}) {
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
     final roomName = roomController.text.trim().isEmpty ? 'oda1' : roomController.text.trim();
     final code = codeController.text.trim().isEmpty ? _generateRoomCode() : codeController.text.trim();
 
@@ -1059,7 +1334,11 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                 ),
                 FilledButton(
                   style: FilledButton.styleFrom(backgroundColor: AppColors.purple),
+<<<<<<< HEAD
                   onPressed: _openCall,
+=======
+                  onPressed: () => _openCall(quick: true),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
                   child: const Text('Hızlı Başlat'),
                 ),
               ],
@@ -1106,6 +1385,20 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                   onChanged: (value) => setState(() => selectedCapacity = value ?? 2),
                 ),
                 const SizedBox(height: 14),
+<<<<<<< HEAD
+=======
+                DropdownButtonFormField<String>(
+                  value: 'Özel oda (kod ile giriş)',
+                  decoration: _inputDecoration('Oda tipi'),
+                  dropdownColor: AppColors.card,
+                  items: const [
+                    DropdownMenuItem(value: 'Özel oda (kod ile giriş)', child: Text('Özel oda (kod ile giriş)')),
+                    DropdownMenuItem(value: 'Herkese açık oda', child: Text('Herkese açık oda')),
+                  ],
+                  onChanged: (_) {},
+                ),
+                const SizedBox(height: 14),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
                 InkWell(
                   onTap: () => setState(() => showAdvanced = !showAdvanced),
                   child: Container(
@@ -1153,12 +1446,33 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
           const SizedBox(height: 10),
           TextButton.icon(
             onPressed: () async {
+<<<<<<< HEAD
               final roomLink = AppStore.inviteLink(roomController.text.trim(), codeController.text.trim());
               await Share.share('BridgeCall odama katıl: $roomLink');
+=======
+              final roomLink = 'livetranslate://join?room=${roomController.text.trim()}&code=${codeController.text.trim()}';
+              await Clipboard.setData(ClipboardData(text: roomLink));
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link kopyalandı')));
+              }
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
             },
             icon: const Icon(Icons.link_rounded),
             label: const Text('Link paylaş'),
           ),
+<<<<<<< HEAD
+=======
+          const SizedBox(height: 14),
+          const Row(
+            children: [
+              Expanded(child: _BottomFeature(icon: Icons.schedule, title: 'Günlük Hak', subtitle: '10 dk / 10 dk', color: AppColors.yellow)),
+              SizedBox(width: 12),
+              Expanded(child: _BottomFeature(icon: Icons.lock, title: 'Güvenli', subtitle: 'Uçtan uca şifreleme', color: AppColors.green)),
+              SizedBox(width: 12),
+              Expanded(child: _BottomFeature(icon: Icons.hd, title: 'Yüksek Kalite', subtitle: 'HD ses & video', color: AppColors.purple)),
+            ],
+          ),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
         ],
       ),
     );
@@ -1168,9 +1482,14 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
 class JoinRoomScreen extends StatefulWidget {
   final String? initialRoomName;
   final String? initialCode;
+<<<<<<< HEAD
   final ProfileData? profile;
 
   const JoinRoomScreen({super.key, this.initialRoomName, this.initialCode, this.profile});
+=======
+
+  const JoinRoomScreen({super.key, this.initialRoomName, this.initialCode});
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
 
   @override
   State<JoinRoomScreen> createState() => _JoinRoomScreenState();
@@ -1188,11 +1507,14 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
     super.initState();
     roomController.text = widget.initialRoomName ?? 'oda1';
     codeController.text = widget.initialCode ?? '';
+<<<<<<< HEAD
     final profile = widget.profile;
     if (profile != null) {
       sourceLanguageName = profile.preferredSourceLanguage;
       targetLanguageName = profile.preferredTargetLanguage;
     }
+=======
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
   }
 
   @override
@@ -1216,6 +1538,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                 _AppTextField(controller: roomController, label: 'Oda adı'),
                 const SizedBox(height: 14),
                 _AppTextField(controller: codeController, label: 'Oda kodu', hint: '6 haneli oda kodunu gir'),
+<<<<<<< HEAD
                 const SizedBox(height: 14),
                 _LanguageDropdown(
                   value: sourceLanguageName,
@@ -1230,6 +1553,8 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                   items: const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce'],
                   onChanged: (value) => setState(() => targetLanguageName = value ?? 'Rusça'),
                 ),
+=======
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
                 const SizedBox(height: 18),
                 FilledButton.icon(
                   style: FilledButton.styleFrom(
@@ -1258,6 +1583,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                 const SizedBox(height: 10),
                 Center(
                   child: TextButton.icon(
+<<<<<<< HEAD
                     onPressed: () async {
                       await Clipboard.setData(ClipboardData(text: roomController.text.trim()));
                       if (context.mounted) {
@@ -1266,6 +1592,11 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                     },
                     icon: const Icon(Icons.info_outline),
                     label: const Text('Oda adını kopyala'),
+=======
+                    onPressed: () {},
+                    icon: const Icon(Icons.info_outline),
+                    label: const Text('Kod nasıl alınır?'),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
                   ),
                 ),
               ],
@@ -1317,7 +1648,10 @@ class _CallScreenState extends State<CallScreen> {
   bool isRecording = false;
   bool _showChat = true;
   bool _isConnecting = false;
+<<<<<<< HEAD
   bool _historySaved = false;
+=======
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
 
   String subtitleText = 'Canlı altyazı burada görünecek';
   String translatedText = 'Çeviri burada görünecek';
@@ -1329,11 +1663,21 @@ class _CallScreenState extends State<CallScreen> {
   late String targetLanguageName;
   DateTime _callStart = DateTime.now();
 
+<<<<<<< HEAD
   final List<_ChatMessage> _messages = [];
 
   String? _reactionEmoji;
   Timer? _reactionTimer;
   Timer? _durationTimer;
+=======
+  final List<_ChatMessage> _messages = [
+    _ChatMessage(text: 'Привет! Как дела?', translatedText: 'Merhaba! Nasılsın?', isMine: false),
+    _ChatMessage(text: 'Merhaba 👋', translatedText: '', isMine: true),
+  ];
+
+  String? _reactionEmoji;
+  Timer? _reactionTimer;
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
 
   final Map<String, String> sourceLanguages = const {
     'Türkçe': 'TR',
@@ -1372,11 +1716,17 @@ class _CallScreenState extends State<CallScreen> {
     await _recorder.openRecorder();
     await _openCamera();
     await _joinRoom();
+<<<<<<< HEAD
     if (mounted) {
       setState(() {
         statusText = widget.isOwner ? 'Oda hazır, katılımcı bekleniyor' : 'Bağlantı kuruluyor';
       });
     }
+=======
+    setState(() {
+      statusText = widget.isOwner ? 'Oda hazır, katılımcı bekleniyor' : 'Bağlantı kuruluyor';
+    });
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
   }
 
   Future<void> _openCamera() async {
@@ -1510,8 +1860,13 @@ class _CallScreenState extends State<CallScreen> {
           final data = jsonDecode(message);
           if (mounted && data['translated'] != null) {
             setState(() {
+<<<<<<< HEAD
               subtitleText = data['original']?.toString() ?? subtitleText;
               translatedText = data['translated']?.toString() ?? translatedText;
+=======
+              subtitleText = data['original'] ?? subtitleText;
+              translatedText = data['translated'];
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
             });
           }
           if (mounted && data['error'] != null) {
@@ -1531,7 +1886,10 @@ class _CallScreenState extends State<CallScreen> {
     if (isRecording) return;
     _connectTranslateSocket();
     isRecording = true;
+<<<<<<< HEAD
     if (mounted) setState(() {});
+=======
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
 
     while (isRecording) {
       try {
@@ -1560,7 +1918,10 @@ class _CallScreenState extends State<CallScreen> {
         isRecording = false;
       }
     }
+<<<<<<< HEAD
     if (mounted) setState(() {});
+=======
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
   }
 
   Future<void> _stopSubtitleRecording() async {
@@ -1568,7 +1929,10 @@ class _CallScreenState extends State<CallScreen> {
     try {
       await _recorder.stopRecorder();
     } catch (_) {}
+<<<<<<< HEAD
     if (mounted) setState(() {});
+=======
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
   }
 
   Future<void> _startCall() async {
@@ -1593,7 +1957,11 @@ class _CallScreenState extends State<CallScreen> {
     final type = data['type'];
 
     if (type == 'welcome') {
+<<<<<<< HEAD
       if (mounted) setState(() => myClientId = data['clientId']?.toString());
+=======
+      if (mounted) setState(() => myClientId = data['clientId']);
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
       return;
     }
 
@@ -1601,7 +1969,11 @@ class _CallScreenState extends State<CallScreen> {
 
     switch (type) {
       case 'error':
+<<<<<<< HEAD
         if (mounted) setState(() => statusText = data['message']?.toString() ?? 'Bilinmeyen hata');
+=======
+        if (mounted) setState(() => statusText = data['message'] ?? 'Bilinmeyen hata');
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
         return;
       case 'room_created':
         if (mounted) {
@@ -1622,41 +1994,67 @@ class _CallScreenState extends State<CallScreen> {
         if (mounted) setState(() => statusText = 'Katılım isteği otomatik kabul edildi');
         return;
       case 'join_accepted':
+<<<<<<< HEAD
         if (mounted) {
           setState(() {
             memberCount = data['memberCount'] ?? 2;
             statusText = 'Odaya giriş onaylandı';
           });
         }
+=======
+        if (mounted) setState(() {
+          memberCount = data['memberCount'] ?? 2;
+          statusText = 'Odaya giriş onaylandı';
+        });
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
         return;
       case 'join_rejected':
         if (mounted) setState(() => statusText = 'Odaya giriş reddedildi');
         return;
       case 'member_joined':
+<<<<<<< HEAD
         if (mounted) {
           setState(() {
             memberCount += 1;
             statusText = 'Yeni bir kullanıcı katıldı';
           });
         }
+=======
+        if (mounted) setState(() {
+          memberCount += 1;
+          statusText = 'Yeni bir kullanıcı katıldı';
+        });
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
         if (widget.isOwner) {
           await _startCall();
         }
         return;
       case 'member_left':
+<<<<<<< HEAD
         if (mounted) {
           setState(() {
             memberCount = memberCount > 1 ? memberCount - 1 : 1;
             statusText = 'Bir kullanıcı odadan çıktı';
           });
         }
+=======
+        if (mounted) setState(() {
+          memberCount = memberCount > 1 ? memberCount - 1 : 1;
+          statusText = 'Bir kullanıcı odadan çıktı';
+        });
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
         return;
       case 'room_closed':
         if (mounted) {
           setState(() => statusText = 'Oda sahibi çağrıyı kapattı');
+<<<<<<< HEAD
         }
         await _saveHistoryIfNeeded();
         if (mounted) Navigator.pop(context);
+=======
+          Navigator.pop(context);
+        }
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
         return;
       case 'left_room':
         if (mounted) setState(() => statusText = 'Odadan çıkıldı');
@@ -1664,6 +2062,7 @@ class _CallScreenState extends State<CallScreen> {
       case 'chat_message':
         final incoming = data['text']?.toString() ?? '';
         final translated = data['translatedText']?.toString() ?? '';
+<<<<<<< HEAD
         final senderId = data['senderId']?.toString();
         final mine = senderId != null && senderId == myClientId;
         if (incoming.isNotEmpty && mounted) {
@@ -1678,6 +2077,12 @@ class _CallScreenState extends State<CallScreen> {
             isMine: mine,
             timestamp: DateTime.now(),
           ));
+=======
+        if (incoming.isNotEmpty && mounted) {
+          setState(() {
+            _messages.add(_ChatMessage(text: incoming, translatedText: translated, isMine: false));
+          });
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
         }
         return;
       case 'reaction':
@@ -1695,7 +2100,11 @@ class _CallScreenState extends State<CallScreen> {
     if (_peerConnection == null) return;
 
     if (type == 'offer') {
+<<<<<<< HEAD
       final desc = RTCSessionDescription(data['sdp']?.toString(), data['sdpType']?.toString());
+=======
+      final desc = RTCSessionDescription(data['sdp'], data['sdpType']);
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
       await _peerConnection!.setRemoteDescription(desc);
       final answer = await _peerConnection!.createAnswer();
       await _peerConnection!.setLocalDescription(answer);
@@ -1707,14 +2116,22 @@ class _CallScreenState extends State<CallScreen> {
       });
       if (mounted) setState(() => statusText = 'Gelen arama kabul edildi');
     } else if (type == 'answer') {
+<<<<<<< HEAD
       final desc = RTCSessionDescription(data['sdp']?.toString(), data['sdpType']?.toString());
+=======
+      final desc = RTCSessionDescription(data['sdp'], data['sdpType']);
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
       await _peerConnection!.setRemoteDescription(desc);
       if (mounted) setState(() => statusText = 'Bağlantı tamamlandı');
     } else if (type == 'candidate') {
       final c = data['candidate'];
       if (c != null) {
         await _peerConnection!.addCandidate(
+<<<<<<< HEAD
           RTCIceCandidate(c['candidate']?.toString(), c['sdpMid']?.toString(), c['sdpMLineIndex'] as int?),
+=======
+          RTCIceCandidate(c['candidate'], c['sdpMid'], c['sdpMLineIndex']),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
         );
       }
     }
@@ -1727,6 +2144,7 @@ class _CallScreenState extends State<CallScreen> {
   Future<void> _sendChatMessage() async {
     final text = _chatController.text.trim();
     if (text.isEmpty) return;
+<<<<<<< HEAD
     _chatController.clear();
     _sendSignal({
       'type': 'chat_message',
@@ -1735,6 +2153,13 @@ class _CallScreenState extends State<CallScreen> {
       'sourceLang': sourceLanguages[sourceLanguageName],
       'targetLang': targetLanguages[targetLanguageName],
     });
+=======
+    setState(() {
+      _messages.add(_ChatMessage(text: text, translatedText: '', isMine: true));
+      _chatController.clear();
+    });
+    _sendSignal({'type': 'chat_message', 'room': widget.roomName, 'text': text, 'translatedText': ''});
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
   }
 
   void _sendReaction(String emoji) {
@@ -1762,6 +2187,7 @@ class _CallScreenState extends State<CallScreen> {
       camOn = track.enabled;
     }
     if (mounted) setState(() {});
+<<<<<<< HEAD
   }
 
   Future<void> _saveHistoryIfNeeded() async {
@@ -1778,6 +2204,8 @@ class _CallScreenState extends State<CallScreen> {
         timestamp: DateTime.now(),
       ),
     );
+=======
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
   }
 
   Future<void> _hangUp() async {
@@ -1785,7 +2213,10 @@ class _CallScreenState extends State<CallScreen> {
       _sendSignal({'type': 'leave_room'});
     } catch (_) {}
 
+<<<<<<< HEAD
     await _saveHistoryIfNeeded();
+=======
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
     await _stopSubtitleRecording();
     await _peerConnection?.close();
     _peerConnection = null;
@@ -1814,9 +2245,13 @@ class _CallScreenState extends State<CallScreen> {
 
   @override
   void dispose() {
+<<<<<<< HEAD
     _durationTimer?.cancel();
     _reactionTimer?.cancel();
     _saveHistoryIfNeeded();
+=======
+    _reactionTimer?.cancel();
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
     _stopSubtitleRecording();
     _signalChannel?.sink.close();
     _translateChannel?.sink.close();
@@ -1849,6 +2284,7 @@ class _CallScreenState extends State<CallScreen> {
                         end: Alignment.bottomCenter,
                       ),
                     ),
+<<<<<<< HEAD
                     child: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -1858,6 +2294,10 @@ class _CallScreenState extends State<CallScreen> {
                           Text('Karşı taraf bekleniyor', style: TextStyle(color: Colors.white60)),
                         ],
                       ),
+=======
+                    child: const Center(
+                      child: Icon(Icons.videocam_rounded, size: 80, color: Colors.white24),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
                     ),
                   ),
           ),
@@ -1902,6 +2342,7 @@ class _CallScreenState extends State<CallScreen> {
                       ),
                     ],
                   ),
+<<<<<<< HEAD
                 ),
                 _TopRoundButton(icon: Icons.groups_rounded, label: '$memberCount'),
                 const SizedBox(width: 10),
@@ -1917,7 +2358,18 @@ class _CallScreenState extends State<CallScreen> {
                     final link = AppStore.inviteLink(widget.roomName, widget.privateCode);
                     await Share.share('BridgeCall odama katıl: $link');
                   },
+=======
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
                 ),
+                _TopRoundButton(icon: Icons.groups_rounded, label: '$memberCount'),
+                const SizedBox(width: 10),
+                _TopRoundButton(
+                  icon: Icons.chat_bubble_outline,
+                  badgeText: '3',
+                  onTap: () => setState(() => _showChat = !_showChat),
+                ),
+                const SizedBox(width: 10),
+                const _TopRoundButton(icon: Icons.more_horiz_rounded),
               ],
             ),
           ),
@@ -1988,7 +2440,11 @@ class _CallScreenState extends State<CallScreen> {
                 children: [
                   Row(
                     children: [
+<<<<<<< HEAD
                       Expanded(child: Text('$sourceLanguageName (Siz)', style: const TextStyle(color: Colors.white70))),
+=======
+                      const Expanded(child: Text('Türkçe (Siz)', style: TextStyle(color: Colors.white70))),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
                       const Icon(Icons.graphic_eq, color: AppColors.purple),
                     ],
                   ),
@@ -1997,7 +2453,11 @@ class _CallScreenState extends State<CallScreen> {
                   const SizedBox(height: 14),
                   Row(
                     children: [
+<<<<<<< HEAD
                       Expanded(child: Text('$targetLanguageName (Çeviri)', style: const TextStyle(color: Colors.white70))),
+=======
+                      const Expanded(child: Text('Rusça (Karşı taraf)', style: TextStyle(color: Colors.white70))),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
                       const Icon(Icons.graphic_eq, color: AppColors.purple),
                     ],
                   ),
@@ -2035,6 +2495,7 @@ class _CallScreenState extends State<CallScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _controlItem(icon: micOn ? Icons.mic : Icons.mic_off, label: 'Mikrofon', color: micOn ? AppColors.green : Colors.white24, onTap: _toggleMic),
+<<<<<<< HEAD
                     _controlItem(icon: camOn ? Icons.videocam : Icons.videocam_off, label: 'Kamera', color: camOn ? AppColors.blue : Colors.white24, onTap: _toggleCamera),
                     _controlItem(
                       icon: subtitlesOn ? Icons.translate : Icons.translate_outlined,
@@ -2049,6 +2510,17 @@ class _CallScreenState extends State<CallScreen> {
                         }
                       },
                     ),
+=======
+                    _controlItem(icon: camOn ? Icons.videocam : Icons.videocam_off, label: 'Kamera', color: Colors.white24, onTap: _toggleCamera),
+                    _controlItem(icon: subtitlesOn ? Icons.translate : Icons.translate_outlined, label: 'Çeviri', color: AppColors.purple, onTap: () async {
+                      setState(() => subtitlesOn = !subtitlesOn);
+                      if (subtitlesOn) {
+                        await _startSubtitleRecording();
+                      } else {
+                        await _stopSubtitleRecording();
+                      }
+                    }),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
                     _controlItem(icon: Icons.emoji_emotions_outlined, label: 'Avatar', color: Colors.white24, onTap: () => setState(() => _showChat = !_showChat)),
                     _controlItem(icon: Icons.call_end, label: 'Kapat', color: AppColors.red, onTap: _hangUp),
                   ],
@@ -2145,6 +2617,7 @@ class _CallScreenState extends State<CallScreen> {
           const SizedBox(height: 8),
           SizedBox(
             height: 118,
+<<<<<<< HEAD
             child: _messages.isEmpty
                 ? const Center(child: Text('İlk mesajı sen gönder'))
                 : ListView.separated(
@@ -2176,6 +2649,37 @@ class _CallScreenState extends State<CallScreen> {
                       );
                     },
                   ),
+=======
+            child: ListView.separated(
+              reverse: true,
+              itemCount: _messages.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final item = _messages[_messages.length - 1 - index];
+                return Align(
+                  alignment: item.isMine ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 250),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: item.isMine ? AppColors.purple : Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(item.text),
+                        if (item.translatedText.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(item.translatedText, style: const TextStyle(color: Colors.white70)),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
           ),
           const SizedBox(height: 12),
           Row(
@@ -2247,6 +2751,7 @@ class _WaveBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<double> heights = [
+<<<<<<< HEAD
       10.0,
       16.0,
       26.0,
@@ -2261,6 +2766,10 @@ class _WaveBar extends StatelessWidget {
       36.0,
       18.0,
       12.0,
+=======
+      10.0, 16.0, 26.0, 40.0, 24.0, 50.0, 28.0,
+      16.0, 44.0, 30.0, 14.0, 36.0, 18.0, 12.0,
+>>>>>>> ad761823b2965ee1bf37f0eb8da5529222c5f115
     ];
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,

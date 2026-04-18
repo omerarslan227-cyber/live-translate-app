@@ -495,7 +495,7 @@ class _LastRoomCard extends StatelessWidget {
                       ),
                     );
                   },
-            child: Text(lastHistory == null ? 'Yeni oda' : 'Tekrar Bağlan'),
+            child: Text(lastHistory == null ? 'Hazır Değil' : 'Tekrar Bağlan'),
           ),
         ],
       ),
@@ -752,23 +752,7 @@ class MessagesScreen extends StatelessWidget {
             return Scaffold(
               appBar: AppBar(backgroundColor: Colors.transparent, title: const Text('Mesajlar')),
               body: messages.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: _GlassCard(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.mark_chat_unread_outlined, size: 52, color: Colors.white38),
-                              SizedBox(height: 14),
-                              Text('Henüz kayıtlı mesaj yok', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                              SizedBox(height: 8),
-                              Text('İlk konuşmanı başlattığında çeviri mesajların burada görünecek.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    )
+                  ? const Center(child: Text('Henüz kayıtlı mesaj yok'))
                   : ListView.separated(
                       padding: const EdgeInsets.all(18),
                       itemCount: messages.length,
@@ -945,39 +929,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 68,
-                      height: 68,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(colors: [AppColors.purple, AppColors.blue]),
-                        border: Border.all(color: Colors.white10),
-                      ),
-                      child: Center(
-                        child: Text(
-                          (_nameController.text.trim().isNotEmpty ? _nameController.text.trim()[0] : 'B').toUpperCase(),
-                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Profil Bilgileri', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 4),
-                          Text(
-                            _nameController.text.trim().isEmpty ? 'BridgeCall kullanıcısı' : _nameController.text.trim(),
-                            style: const TextStyle(color: Colors.white70),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                const Text('Profil Bilgileri', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
                 _AppTextField(controller: _nameController, label: 'Görünen ad'),
                 const SizedBox(height: 14),
@@ -1085,15 +1037,134 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isWide = size.width >= 900;
-    final isTablet = size.width >= 600;
-    final horizontal = isWide ? 28.0 : 18.0;
-    final previewWidth = isWide ? 180.0 : (isTablet ? 136.0 : 112.0);
-    final previewHeight = isWide ? 240.0 : (isTablet ? 190.0 : 160.0);
-    final reactionBottom = _showChat ? 340.0 : 214.0;
+    return Scaffold(
+      appBar: AppBar(backgroundColor: Colors.transparent, title: const Text('Oda Oluştur')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 6, 18, 24),
+        children: [
+          _GlassCard(
+            child: Row(
+              children: [
+                const Icon(Icons.bolt_rounded, color: AppColors.purple, size: 34),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Hızlı Başlat', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 4),
+                      Text('En popüler ayarlarla hemen odayı oluştur', style: TextStyle(color: Colors.white70)),
+                    ],
+                  ),
+                ),
+                FilledButton(
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.purple),
+                  onPressed: _openCall,
+                  child: const Text('Hızlı Başlat'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Ayarlar', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                _AppTextField(controller: roomController, label: 'Oda adı'),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _LanguageDropdown(
+                        value: sourceLanguageName,
+                        label: 'Dil seçimi',
+                        items: languages,
+                        onChanged: (v) => setState(() => sourceLanguageName = v!),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    const Icon(Icons.swap_horiz_rounded, color: Colors.white54),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: _LanguageDropdown(
+                        value: targetLanguageName,
+                        label: '',
+                        items: languages,
+                        onChanged: (v) => setState(() => targetLanguageName = v!),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<int>(
+                  value: selectedCapacity,
+                  decoration: _inputDecoration('Oda kapasitesi'),
+                  dropdownColor: AppColors.card,
+                  items: capacities.map((e) => DropdownMenuItem(value: e, child: Text('$e kişi'))).toList(),
+                  onChanged: (value) => setState(() => selectedCapacity = value ?? 2),
+                ),
+                const SizedBox(height: 14),
+                InkWell(
+                  onTap: () => setState(() => showAdvanced = !showAdvanced),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.03),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        const Expanded(child: Text('Gelişmiş Ayarlar')),
+                        Icon(showAdvanced ? Icons.expand_less : Icons.expand_more),
+                      ],
+                    ),
+                  ),
+                ),
+                if (showAdvanced) ...[
+                  const SizedBox(height: 14),
+                  _AppTextField(controller: codeController, label: 'Özel oda kodu'),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => setState(() => codeController.text = _generateRoomCode()),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Yeni Kod Oluştur'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(58),
+              backgroundColor: AppColors.purple,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            ),
+            onPressed: _openCall,
+            icon: const Icon(Icons.rocket_launch_rounded),
+            label: const Text('Odayı Başlat', style: TextStyle(fontSize: 18)),
+          ),
+          const SizedBox(height: 10),
+          TextButton.icon(
+            onPressed: () async {
+              final roomLink = AppStore.inviteLink(roomController.text.trim(), codeController.text.trim());
+              await Share.share('BridgeCall odama katıl: $roomLink');
+            },
+            icon: const Icon(Icons.link_rounded),
+            label: const Text('Link paylaş'),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-<<<<<<< HEAD
 class JoinRoomScreen extends StatefulWidget {
   final String? initialRoomName;
   final String? initialCode;
@@ -1311,7 +1382,15 @@ class _CallScreenState extends State<CallScreen> {
   Future<void> _openCamera() async {
     try {
       final stream = await navigator.mediaDevices.getUserMedia({
-        'audio': true,
+        'audio': {
+          'echoCancellation': true,
+          'noiseSuppression': true,
+          'autoGainControl': true,
+          'googEchoCancellation': true,
+          'googNoiseSuppression': true,
+          'googAutoGainControl': true,
+          'googHighpassFilter': true,
+        },
         'video': {
           'facingMode': 'user',
           'width': {'ideal': 720},
@@ -1324,13 +1403,13 @@ class _CallScreenState extends State<CallScreen> {
       if (mounted) {
         setState(() {
           cameraStarted = true;
-          statusText = 'Kamera açıldı';
+          statusText = 'Kamera ve ses hazır';
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          statusText = 'Kamera hatası: $e';
+          statusText = 'Kamera veya mikrofon izni gerekli';
         });
       }
     }
@@ -1378,7 +1457,7 @@ class _CallScreenState extends State<CallScreen> {
     _peerConnection!.onConnectionState = (state) {
       if (mounted) {
         setState(() {
-          statusText = 'Bağlantı: $state';
+          statusText = state.toString().contains('RTCPeerConnectionStateConnected') ? 'Karşı taraf bağlandı' : 'Bağlantı güncelleniyor';
         });
       }
     };
@@ -1444,25 +1523,25 @@ class _CallScreenState extends State<CallScreen> {
             });
           }
           if (mounted && data['error'] != null) {
-            setState(() => statusText = 'Çeviri servisine bağlanılamadı');
+            setState(() => statusText = 'Çeviri hatası: ${data['error']}');
           }
         } catch (e) {
-          if (mounted) setState(() => statusText = 'Çeviri verisi okunamadı');
+          if (mounted) setState(() => statusText = 'Çeviri veri hatası: $e');
         }
       },
       onError: (error) {
-        if (mounted) setState(() => statusText = 'Çeviri servisine bağlanılamadı');
+        if (mounted) setState(() => statusText = 'Çeviri soketi hatası: $error');
       },
     );
   }
 
   Future<void> _startSubtitleRecording() async {
-    if (isRecording) return;
+    if (isRecording || !subtitlesOn || !micOn) return;
     _connectTranslateSocket();
     isRecording = true;
     if (mounted) setState(() {});
 
-    while (isRecording) {
+    while (isRecording && subtitlesOn && micOn) {
       try {
         final path = await _tempWavPath();
         await _recorder.startRecorder(
@@ -1471,7 +1550,7 @@ class _CallScreenState extends State<CallScreen> {
           numChannels: 1,
           sampleRate: 16000,
         );
-        await Future.delayed(const Duration(seconds: 2));
+        await Future.delayed(const Duration(milliseconds: 1200));
         final savedPath = await _recorder.stopRecorder();
         if (savedPath != null) {
           final file = File(savedPath);
@@ -1485,7 +1564,7 @@ class _CallScreenState extends State<CallScreen> {
           }
         }
       } catch (e) {
-        if (mounted) setState(() => statusText = 'Kayıt hatası: $e');
+        if (mounted) setState(() => statusText = 'Mikrofon erişimi kontrol edilmeli');
         isRecording = false;
       }
     }
@@ -1747,9 +1826,9 @@ class _CallScreenState extends State<CallScreen> {
     if (lower.contains('authorization failure') || lower.contains('forbidden') || lower.contains('auth_key')) {
       return 'Çeviri servisine bağlanılamadı';
     }
-    if (lower.contains('kamera hatası')) return 'Kamera erişimi kontrol edilmeli';
+    if (lower.contains('kamera') || lower.contains('mikrofon')) return 'Kamera ve mikrofon izinlerini kontrol et';
     if (lower.contains('signal')) return 'Bağlantı yeniden kuruluyor';
-    if (lower.contains('kayıt hatası')) return 'Ses kaydı başlatılamadı';
+    if (lower.contains('kayıt')) return 'Ses kaydı başlatılamadı';
     return statusText;
   }
 
@@ -1780,14 +1859,16 @@ class _CallScreenState extends State<CallScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).padding.bottom;
-=======
->>>>>>> 36846c3 (Fix call screen layout)
+    final media = MediaQuery.of(context);
+    final size = media.size;
+    final isWide = size.width >= 900;
+    final remoteConnected = _remoteRenderer.srcObject != null;
+
     return Scaffold(
       body: Stack(
         children: [
           Positioned.fill(
-            child: _remoteRenderer.srcObject != null
+            child: remoteConnected
                 ? RTCVideoView(
                     _remoteRenderer,
                     objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
@@ -1795,11 +1876,7 @@ class _CallScreenState extends State<CallScreen> {
                 : Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
-<<<<<<< HEAD
-                        colors: [Color(0xFF0E1427), Color(0xFF201C2F), Color(0xFF10172B)],
-=======
-                        colors: [Color(0xFF111827), Color(0xFF231A34), Color(0xFF0A1020)],
->>>>>>> 36846c3 (Fix call screen layout)
+                        colors: [Color(0xFF101828), Color(0xFF211933), Color(0xFF0B1220)],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
@@ -1808,18 +1885,12 @@ class _CallScreenState extends State<CallScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: const [
-<<<<<<< HEAD
-                          Icon(Icons.videocam_rounded, size: 82, color: Colors.white24),
+                          Icon(Icons.videocam_off_rounded, size: 86, color: Colors.white24),
                           SizedBox(height: 12),
-                          Text('Karşı taraf bekleniyor', style: TextStyle(color: Colors.white60, fontSize: 18)),
-=======
-                          Icon(Icons.videocam_off_rounded, size: 82, color: Colors.white24),
-                          SizedBox(height: 10),
                           Text(
                             'Karşı taraf bekleniyor',
                             style: TextStyle(color: Colors.white60, fontSize: 18),
                           ),
->>>>>>> 36846c3 (Fix call screen layout)
                         ],
                       ),
                     ),
@@ -1829,15 +1900,11 @@ class _CallScreenState extends State<CallScreen> {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-<<<<<<< HEAD
-                  colors: [Colors.black.withOpacity(0.20), Colors.transparent, Colors.black.withOpacity(0.58)],
-=======
                   colors: [
-                    Colors.black.withOpacity(0.40),
+                    Colors.black.withOpacity(0.35),
                     Colors.transparent,
-                    Colors.black.withOpacity(0.60),
+                    Colors.black.withOpacity(0.62),
                   ],
->>>>>>> 36846c3 (Fix call screen layout)
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
@@ -1845,336 +1912,225 @@ class _CallScreenState extends State<CallScreen> {
             ),
           ),
           SafeArea(
-            child: Padding(
-<<<<<<< HEAD
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.28),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(Icons.shield_outlined, color: Colors.white),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          widget.roomName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(Icons.circle, color: AppColors.green, size: 10),
-                            const SizedBox(width: 8),
-                            Text(_callDuration, style: const TextStyle(color: Colors.white70)),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                _statusPillText,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: Colors.white54),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _TopRoundButton(icon: Icons.groups_rounded, label: '$memberCount'),
-                  const SizedBox(width: 8),
-                  _TopRoundButton(
-                    icon: Icons.chat_bubble_outline,
-                    badgeText: _messages.isEmpty ? null : '${_messages.length}',
-                    onTap: () => setState(() => _showChat = !_showChat),
-                  ),
-                  const SizedBox(width: 8),
-                  _TopRoundButton(
-                    icon: Icons.ios_share_rounded,
-                    onTap: () async {
-                      final link = AppStore.inviteLink(widget.roomName, widget.privateCode);
-                      await Share.share('BridgeCall odama katıl: $link');
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 82,
-            right: 16,
-            width: 104,
-            height: 146,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(22),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  cameraStarted
-                      ? RTCVideoView(
-                          _localRenderer,
-                          mirror: true,
-                          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                        )
-                      : Container(color: Colors.black45),
-                  Positioned(
-                    right: 8,
-                    bottom: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.4),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.flip_camera_android, size: 16),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_reactionEmoji != null)
-            Positioned(
-              right: 26,
-              top: 250,
-              child: AnimatedScale(
-                duration: const Duration(milliseconds: 220),
-                scale: _reactionEmoji == null ? 0.6 : 1,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.42),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(_reactionEmoji!, style: const TextStyle(fontSize: 42)),
-                ),
-              ),
-            ),
-          Positioned(
-            right: 14,
-            bottom: _showChat ? 286 : 198,
-            child: Column(
-              children: [
-                for (final emoji in ['👍', '😍', '😂', '😮'])
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: InkWell(
-                      onTap: () => _sendReaction(emoji),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.34),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Center(child: Text(emoji, style: const TextStyle(fontSize: 24))),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: _showChat ? 196 : 116,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 220),
-              opacity: subtitlesOn ? 1 : 0.65,
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.46),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white.withOpacity(0.08)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(child: Text('$sourceLanguageName (Sen)', style: const TextStyle(color: Colors.white70))),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: AppColors.purple.withOpacity(0.16),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: const Text('Canlı', style: TextStyle(color: Color(0xFFD9C6FF), fontSize: 12, fontWeight: FontWeight.w600)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(subtitleText, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(child: Text('$targetLanguageName (Çeviri)', style: const TextStyle(color: Colors.white70))),
-                        const Icon(Icons.multitrack_audio_rounded, color: AppColors.purple, size: 18),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(translatedText, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w500)),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: _showChat ? 150 : 72,
-            child: Column(
-              children: [
-                const _WaveBar(),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.24),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    isRecording ? 'Sen konuşuyorsun...' : _cleanStatusText,
-                    style: const TextStyle(color: Color(0xFFD7C8FF)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            left: 12,
-            right: 12,
-            bottom: 8 + bottomInset / 4,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_showChat) ...[
-                  _chatPanel(),
-                  const SizedBox(height: 12),
-                ],
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.34),
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.white.withOpacity(0.06)),
-                  ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(isWide ? 24 : 16, 14, isWide ? 24 : 16, 12),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _controlItem(icon: micOn ? Icons.mic : Icons.mic_off, label: 'Mikrofon', color: micOn ? AppColors.green : Colors.white24, onTap: _toggleMic),
-                      _controlItem(icon: camOn ? Icons.videocam : Icons.videocam_off, label: 'Kamera', color: camOn ? AppColors.blue : Colors.white24, onTap: _toggleCamera),
-                      _controlItem(
-                        icon: subtitlesOn ? Icons.translate : Icons.translate_outlined,
-                        label: 'Çeviri',
-                        color: subtitlesOn ? AppColors.purple : Colors.white24,
-                        onTap: () async {
-                          setState(() => subtitlesOn = !subtitlesOn);
-                          if (subtitlesOn) {
-                            await _startSubtitleRecording();
-                          } else {
-                            await _stopSubtitleRecording();
-                          }
-                        },
-                      ),
-                      _controlItem(icon: Icons.auto_awesome, label: 'Avatar', color: Colors.white24, onTap: () => setState(() => _showChat = !_showChat)),
-                      _controlItem(icon: Icons.call_end, label: 'Kapat', color: AppColors.red, onTap: _hangUp),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text('Oda kodu: ${widget.privateCode}', style: const TextStyle(color: Colors.white60, fontSize: 12)),
-              ],
-=======
-              padding: EdgeInsets.symmetric(horizontal: horizontal, vertical: 14),
-              child: Column(
-                children: [
-                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.30),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white.withOpacity(0.06)),
-                        ),
-                        child: const Icon(Icons.shield_outlined, color: Colors.white),
-                      ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              widget.roomName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: isWide ? 28 : 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
                             Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.circle, color: AppColors.green, size: 10),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    '$_callDuration  •  $statusText',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                                Container(
+                                  width: 46,
+                                  height: 46,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.28),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: Colors.white.withOpacity(0.06)),
                                   ),
+                                  child: const Icon(Icons.shield_outlined, color: Colors.white),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        widget.roomName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(fontSize: isWide ? 28 : 24, fontWeight: FontWeight.bold),
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Row(
+                                        children: [
+                                          Container(
+                                            width: 9,
+                                            height: 9,
+                                            decoration: const BoxDecoration(color: AppColors.green, shape: BoxShape.circle),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              '$_callDuration • $_statusPillText',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(color: Colors.white70, fontSize: 14),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    _TopRoundButton(icon: Icons.groups_rounded, label: '$memberCount'),
+                                    _TopRoundButton(
+                                      icon: Icons.chat_bubble_outline,
+                                      badgeText: _messages.isEmpty ? null : '${_messages.length}',
+                                      onTap: () => setState(() => _showChat = !_showChat),
+                                    ),
+                                    _TopRoundButton(
+                                      icon: Icons.ios_share_rounded,
+                                      onTap: () async {
+                                        final link = AppStore.inviteLink(widget.roomName, widget.privateCode);
+                                        await Share.share('BridgeCall odama katıl: $link');
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
+                            const Spacer(),
+                            Align(
+                              alignment: Alignment.bottomCenter,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(maxWidth: isWide ? 860 : 620),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    AnimatedOpacity(
+                                      duration: const Duration(milliseconds: 200),
+                                      opacity: subtitlesOn ? 1 : 0.6,
+                                      child: Container(
+                                        width: double.infinity,
+                                        padding: EdgeInsets.all(isWide ? 20 : 16),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.42),
+                                          borderRadius: BorderRadius.circular(24),
+                                          border: Border.all(color: Colors.white.withOpacity(0.06)),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Expanded(child: Text('$sourceLanguageName (Siz)', style: const TextStyle(color: Colors.white70))),
+                                                const Icon(Icons.multitrack_audio_rounded, color: AppColors.purple, size: 18),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              subtitleText,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(fontSize: isWide ? 22 : 18, fontWeight: FontWeight.w700),
+                                            ),
+                                            const SizedBox(height: 14),
+                                            Row(
+                                              children: [
+                                                Expanded(child: Text('$targetLanguageName (Çeviri)', style: const TextStyle(color: Colors.white70))),
+                                                const Icon(Icons.multitrack_audio_rounded, color: AppColors.blue, size: 18),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              translatedText,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(fontSize: isWide ? 22 : 17, fontWeight: FontWeight.w500),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    const _WaveBar(),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      isRecording ? 'Sen konuşuyorsun...' : _cleanStatusText,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(color: Color(0xFFD7C8FF)),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Wrap(
+                                      alignment: WrapAlignment.center,
+                                      spacing: 10,
+                                      runSpacing: 10,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(0.28),
+                                            borderRadius: BorderRadius.circular(999),
+                                            border: Border.all(color: Colors.white.withOpacity(0.06)),
+                                          ),
+                                          child: Text('Oda kodu: ${widget.privateCode}', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(0.28),
+                                            borderRadius: BorderRadius.circular(999),
+                                            border: Border.all(color: Colors.white.withOpacity(0.06)),
+                                          ),
+                                          child: Text(micOn ? 'Bluetooth / kablolu kulaklık uyumlu' : 'Mikrofon kapalı', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 14),
+                                    Wrap(
+                                      alignment: WrapAlignment.center,
+                                      spacing: isWide ? 18 : 10,
+                                      runSpacing: 12,
+                                      children: [
+                                        _controlItem(icon: micOn ? Icons.mic : Icons.mic_off, label: 'Mikrofon', color: micOn ? AppColors.green : Colors.white24, onTap: _toggleMic),
+                                        _controlItem(icon: camOn ? Icons.videocam : Icons.videocam_off, label: 'Kamera', color: camOn ? AppColors.blue : Colors.white24, onTap: _toggleCamera),
+                                        _controlItem(
+                                          icon: subtitlesOn ? Icons.translate : Icons.translate_outlined,
+                                          label: 'Çeviri',
+                                          color: subtitlesOn ? AppColors.purple : Colors.white24,
+                                          onTap: () async {
+                                            setState(() => subtitlesOn = !subtitlesOn);
+                                            if (subtitlesOn && micOn) {
+                                              await _startSubtitleRecording();
+                                            } else {
+                                              await _stopSubtitleRecording();
+                                            }
+                                          },
+                                        ),
+                                        _controlItem(
+                                          icon: _showChat ? Icons.chat : Icons.chat_bubble_outline,
+                                          label: 'Sohbet',
+                                          color: _showChat ? AppColors.yellow : Colors.white24,
+                                          onTap: () => setState(() => _showChat = !_showChat),
+                                        ),
+                                        _controlItem(icon: Icons.call_end, label: 'Kapat', color: AppColors.red, onTap: _hangUp),
+                                      ],
+                                    ),
+                                    if (_showChat) ...[
+                                      const SizedBox(height: 16),
+                                      _chatPanel(),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      _TopRoundButton(icon: Icons.groups_rounded, label: '$memberCount'),
-                      const SizedBox(width: 8),
-                      _TopRoundButton(
-                        icon: Icons.chat_bubble_outline,
-                        badgeText: _messages.isEmpty ? null : '${_messages.length}',
-                        onTap: () => setState(() => _showChat = !_showChat),
-                      ),
-                      const SizedBox(width: 8),
-                      _TopRoundButton(
-                        icon: Icons.ios_share_rounded,
-                        onTap: () async {
-                          final link = AppStore.inviteLink(widget.roomName, widget.privateCode);
-                          await Share.share('BridgeCall odama katıl: $link');
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          width: previewWidth,
-                          height: previewHeight,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(24),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(
+                            width: isWide ? 148 : 112,
+                            height: isWide ? 206 : 158,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(color: Colors.white.withOpacity(0.08)),
+                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 24)],
+                            ),
+                            clipBehavior: Clip.antiAlias,
                             child: Stack(
                               children: [
                                 Positioned.fill(
@@ -2187,211 +2143,55 @@ class _CallScreenState extends State<CallScreen> {
                                       : Container(color: Colors.black38),
                                 ),
                                 Positioned(
-                                  right: 10,
-                                  bottom: 10,
+                                  left: 8,
+                                  top: 8,
                                   child: Container(
-                                    padding: const EdgeInsets.all(6),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: Colors.black.withOpacity(0.45),
-                                      shape: BoxShape.circle,
+                                      borderRadius: BorderRadius.circular(999),
                                     ),
-                                    child: const Icon(Icons.flip_camera_android, size: 18),
+                                    child: const Text('Siz', style: TextStyle(fontSize: 12)),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                        if (_reactionEmoji != null)
-                          Positioned(
-                            right: 18,
-                            bottom: reactionBottom,
-                            child: AnimatedScale(
-                              duration: const Duration(milliseconds: 250),
-                              scale: _reactionEmoji == null ? 0.5 : 1,
-                              child: Container(
-                                padding: const EdgeInsets.all(18),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.45),
-                                  borderRadius: BorderRadius.circular(22),
+                          const SizedBox(height: 12),
+                          for (final emoji in ['👍', '😍', '😂', '😮', '👏'])
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: InkWell(
+                                onTap: () => _sendReaction(emoji),
+                                borderRadius: BorderRadius.circular(18),
+                                child: Container(
+                                  width: 52,
+                                  height: 52,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.4),
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(color: Colors.white.withOpacity(0.05)),
+                                  ),
+                                  child: Center(child: Text(emoji, style: const TextStyle(fontSize: 26))),
                                 ),
-                                child: Text(_reactionEmoji!, style: const TextStyle(fontSize: 44)),
                               ),
                             ),
-                          ),
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          child: Align(
-                            alignment: Alignment.bottomCenter,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(maxWidth: isWide ? 820 : 560),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: double.infinity,
-                                    padding: EdgeInsets.all(isWide ? 20 : 16),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.42),
-                                      borderRadius: BorderRadius.circular(24),
-                                      border: Border.all(color: Colors.white.withOpacity(0.06)),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                '$sourceLanguageName (Siz)',
-                                                style: const TextStyle(color: Colors.white70),
-                                              ),
-                                            ),
-                                            const Icon(Icons.graphic_eq, color: AppColors.purple),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          subtitleText,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: isWide ? 22 : 19,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 14),
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                '$targetLanguageName (Çeviri)',
-                                                style: const TextStyle(color: Colors.white70),
-                                              ),
-                                            ),
-                                            const Icon(Icons.graphic_eq, color: AppColors.purple),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          translatedText,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            fontSize: isWide ? 22 : 19,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  const _WaveBar(),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    isRecording ? 'Sen konuşuyorsun...' : statusText,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(color: Color(0xFFD7C8FF)),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.28),
-                                      borderRadius: BorderRadius.circular(999),
-                                      border: Border.all(color: Colors.white.withOpacity(0.06)),
-                                    ),
-                                    child: Text(
-                                      'Oda kodu: ${widget.privateCode}',
-                                      style: const TextStyle(color: Colors.white70, fontSize: 13),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  Wrap(
-                                    alignment: WrapAlignment.center,
-                                    spacing: isWide ? 18 : 10,
-                                    runSpacing: 12,
-                                    children: [
-                                      _controlItem(
-                                        icon: micOn ? Icons.mic : Icons.mic_off,
-                                        label: 'Mikrofon',
-                                        color: micOn ? AppColors.green : Colors.white24,
-                                        onTap: _toggleMic,
-                                      ),
-                                      _controlItem(
-                                        icon: camOn ? Icons.videocam : Icons.videocam_off,
-                                        label: 'Kamera',
-                                        color: camOn ? AppColors.blue : Colors.white24,
-                                        onTap: _toggleCamera,
-                                      ),
-                                      _controlItem(
-                                        icon: subtitlesOn ? Icons.translate : Icons.translate_outlined,
-                                        label: 'Çeviri',
-                                        color: subtitlesOn ? AppColors.purple : Colors.white24,
-                                        onTap: () async {
-                                          setState(() => subtitlesOn = !subtitlesOn);
-                                          if (subtitlesOn) {
-                                            await _startSubtitleRecording();
-                                          } else {
-                                            await _stopSubtitleRecording();
-                                          }
-                                        },
-                                      ),
-                                      _controlItem(
-                                        icon: Icons.auto_awesome_rounded,
-                                        label: 'Avatar',
-                                        color: Colors.white24,
-                                        onTap: () => setState(() => _showChat = !_showChat),
-                                      ),
-                                      _controlItem(
-                                        icon: Icons.call_end,
-                                        label: 'Kapat',
-                                        color: AppColors.red,
-                                        onTap: _hangUp,
-                                      ),
-                                    ],
-                                  ),
-                                  if (_showChat) ...[
-                                    const SizedBox(height: 16),
-                                    _chatPanel(),
-                                  ],
-                                ],
+                          if (_reactionEmoji != null)
+                            Container(
+                              margin: const EdgeInsets.only(top: 10),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.45),
+                                borderRadius: BorderRadius.circular(22),
                               ),
+                              child: Text(_reactionEmoji!, style: const TextStyle(fontSize: 38)),
                             ),
-                          ),
-                        ),
-                        Positioned(
-                          right: 0,
-                          bottom: _showChat ? 304 : 180,
-                          child: Column(
-                            children: [
-                              for (final emoji in ['👍', '😍', '😂', '😮', '👏'])
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: InkWell(
-                                    onTap: () => _sendReaction(emoji),
-                                    child: Container(
-                                      width: 52,
-                                      height: 52,
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.4),
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                      child: Center(child: Text(emoji, style: const TextStyle(fontSize: 26))),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
-              ),
->>>>>>> 36846c3 (Fix call screen layout)
+                );
+              },
             ),
           ),
         ],
@@ -2409,12 +2209,12 @@ class _CallScreenState extends State<CallScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: SizedBox(
-        width: 68,
+        width: 72,
         child: Column(
           children: [
             Container(
-              width: 58,
-              height: 58,
+              width: 62,
+              height: 62,
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
@@ -2424,8 +2224,8 @@ class _CallScreenState extends State<CallScreen> {
               ),
               child: Icon(icon, color: Colors.white),
             ),
-            const SizedBox(height: 6),
-            Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12)),
+            const SizedBox(height: 8),
+            Text(label, style: const TextStyle(fontSize: 13)),
           ],
         ),
       ),
@@ -2444,7 +2244,7 @@ class _CallScreenState extends State<CallScreen> {
         children: [
           Row(
             children: [
-              const Text('Sohbet', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              const Text('Sohbet', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
               const Spacer(),
               IconButton(
                 onPressed: () => setState(() => _showChat = false),
@@ -2454,7 +2254,7 @@ class _CallScreenState extends State<CallScreen> {
           ),
           const SizedBox(height: 8),
           SizedBox(
-            height: 108,
+            height: 118,
             child: _messages.isEmpty
                 ? const Center(child: Text('İlk mesajı sen gönder'))
                 : ListView.separated(

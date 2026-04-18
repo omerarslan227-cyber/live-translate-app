@@ -2399,7 +2399,7 @@ class _CallScreenState extends State<CallScreen> {
   }
 }
 
-class _TopRoundButtonclass _TopRoundButton extends StatelessWidget {
+class _TopRoundButton extends StatelessWidget {
   final IconData icon;
   final String? label;
   final String? badgeText;

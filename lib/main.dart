@@ -29,7 +29,7 @@ class LiveTranslateApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'BridgeCall',
+      title: 'Live Translate',
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF050816),
@@ -56,6 +56,24 @@ class AppColors {
   static const red = Color(0xFFFF4D4F);
   static const yellow = Color(0xFFFBBF24);
 }
+
+String languageFlag(String language) {
+  switch (language) {
+    case 'Türkçe':
+      return '🇹🇷';
+    case 'Rusça':
+      return '🇷🇺';
+    case 'Ukraynaca':
+      return '🇺🇦';
+    case 'İngilizce':
+      return '🇬🇧';
+    case 'Gürcüce':
+      return '🇬🇪';
+    default:
+      return '🌐';
+  }
+}
+
 
 class AppStore {
   static const _historyKey = 'call_history_v1';
@@ -255,6 +273,7 @@ class StoredMessage {
       );
 }
 
+
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -280,39 +299,57 @@ class _HomeShellState extends State<HomeShell> {
         decoration: const BoxDecoration(
           color: AppColors.card,
           border: Border(top: BorderSide(color: AppColors.border)),
-        ),
-        child: NavigationBar(
-          backgroundColor: AppColors.card,
-          indicatorColor: Colors.white10,
-          selectedIndex: index,
-          onDestinationSelected: (value) => setState(() => index = value),
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'Ana Sayfa',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.chat_bubble_outline),
-              selectedIcon: Icon(Icons.chat_bubble),
-              label: 'Mesajlar',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.history),
-              selectedIcon: Icon(Icons.history_toggle_off),
-              label: 'Geçmiş',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: 'Profil',
-            ),
+          boxShadow: [
+            BoxShadow(color: Colors.black54, blurRadius: 24, offset: Offset(0, -8)),
           ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: NavigationBar(
+            height: 76,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            backgroundColor: Colors.transparent,
+            indicatorColor: Colors.white.withOpacity(0.08),
+            surfaceTintColor: Colors.transparent,
+            selectedIndex: index,
+            onDestinationSelected: (value) => setState(() => index = value),
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home_rounded),
+                label: 'Ana Sayfa',
+              ),
+              NavigationDestination(
+                icon: Badge(
+                  isLabelVisible: true,
+                  label: Text('3'),
+                  child: Icon(Icons.chat_bubble_outline_rounded),
+                ),
+                selectedIcon: Badge(
+                  isLabelVisible: true,
+                  label: Text('3'),
+                  child: Icon(Icons.chat_bubble_rounded),
+                ),
+                label: 'Mesajlar',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.access_time_rounded),
+                selectedIcon: Icon(Icons.history_rounded),
+                label: 'Geçmiş',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline_rounded),
+                selectedIcon: Icon(Icons.person_rounded),
+                label: 'Profil',
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -329,37 +366,58 @@ class HomeScreen extends StatelessWidget {
             return Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF050816), Color(0xFF071327), Color(0xFF0A1021)],
+                  colors: [Color(0xFF040816), Color(0xFF061227), Color(0xFF090F1D)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
               ),
               child: SafeArea(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
                   children: [
                     Row(
-                      children: const [
-                        Icon(Icons.call_rounded, color: AppColors.purple, size: 30),
-                        SizedBox(width: 10),
-                        Text(
-                          'BridgeCall',
-                          style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            gradient: const LinearGradient(
+                              colors: [AppColors.purple, Color(0xFF6D5BFF)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: const Icon(Icons.translate_rounded, color: Colors.white),
                         ),
-                        Spacer(),
-                        Icon(Icons.settings_outlined, color: Colors.white70),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'Live Translate',
+                          style: TextStyle(fontSize: 23, fontWeight: FontWeight.w800),
+                        ),
+                        const Spacer(),
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.04),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.white.withOpacity(0.06)),
+                          ),
+                          child: const Icon(Icons.settings_outlined, color: Colors.white70),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
                     _StatusStrip(profileName: data.profile.displayName),
                     const SizedBox(height: 14),
                     _LastRoomCard(lastHistory: data.lastHistory),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 16),
                     _ActionButton(
                       title: 'Oda Oluştur',
                       subtitle: 'Yeni bir oda oluştur ve davet et',
-                      icon: Icons.add,
-                      gradient: const [Color(0xFF9D6BFF), Color(0xFF6D48E6)],
+                      icon: Icons.add_rounded,
+                      gradient: const [Color(0xFF9D6BFF), Color(0xFF6C49E8)],
                       onTap: () {
                         Navigator.push(
                           context,
@@ -372,7 +430,7 @@ class HomeScreen extends StatelessWidget {
                       title: 'Odaya Katıl',
                       subtitle: 'Kod ile mevcut odaya katıl',
                       icon: Icons.login_rounded,
-                      gradient: const [Color(0xFF4F8CFF), Color(0xFF3567FF)],
+                      gradient: const [Color(0xFF4B7DFF), Color(0xFF355BEF)],
                       onTap: () {
                         Navigator.push(
                           context,
@@ -380,7 +438,7 @@ class HomeScreen extends StatelessWidget {
                         );
                       },
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 16),
                     const _DemoCard(),
                     const SizedBox(height: 16),
                     _RecentConversationsCard(history: data.history),
@@ -408,6 +466,7 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _HomeData {
+
   final List<CallHistoryEntry> history;
   final CallHistoryEntry? lastHistory;
   final ProfileData profile;
@@ -418,6 +477,7 @@ class _HomeData {
     this.profile = const ProfileData(),
   });
 }
+
 
 class _StatusStrip extends StatelessWidget {
   final String profileName;
@@ -434,12 +494,20 @@ class _StatusStrip extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              profileName.isEmpty ? 'BridgeCall’a hoş geldin' : 'Hoş geldin, $profileName',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              '38 kişi aktif',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
             ),
           ),
-          const SizedBox(width: 10),
-          const Text('🔥 Popüler: Türkçe ↔ Rusça • Gürcüce yeni', style: TextStyle(color: Colors.white70)),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              profileName.isEmpty ? '🔥 Popüler: Türkçe ↔ Rusça' : '🔥 $profileName için popüler: Türkçe ↔ Rusça',
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Icon(Icons.chevron_right_rounded, color: Colors.white54),
         ],
       ),
     );
@@ -454,32 +522,36 @@ class _LastRoomCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _GlassCard(
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Son oda', style: TextStyle(color: Colors.white60)),
-                const SizedBox(height: 8),
+                const Text('Son oda', style: TextStyle(color: Colors.white60, fontSize: 14)),
+                const SizedBox(height: 10),
                 Text(
-                  lastHistory?.roomName ?? 'Henüz oda yok',
-                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                  lastHistory?.roomName ?? 'oda1',
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   lastHistory == null
-                      ? 'İlk konuşmanı başlat'
-                      : '${lastHistory!.sourceLanguage} ↔ ${lastHistory!.targetLanguage} • ${lastHistory!.durationLabel}',
-                  style: const TextStyle(color: Colors.white70),
+                      ? '2 kişi • 00:12:36'
+                      : '${lastHistory!.memberCount} kişi • ${lastHistory!.durationLabel}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 12),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.purple,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
             onPressed: lastHistory == null
@@ -509,6 +581,7 @@ class _DemoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _GlassCard(
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: const [
@@ -516,7 +589,7 @@ class _DemoCard extends StatelessWidget {
             children: [
               Text(
                 'Canlı Çeviri Denemesi',
-                style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.purple),
+                style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF8F7CFF)),
               ),
               Spacer(),
               Text('● Canlı', style: TextStyle(color: AppColors.green)),
@@ -548,16 +621,20 @@ class _DemoLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('$from   $source', style: const TextStyle(fontSize: 15)),
-              const SizedBox(height: 6),
-              Text('$to   $target', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-            ],
+          child: RichText(
+            text: TextSpan(
+              style: const TextStyle(fontFamily: 'Roboto', color: Colors.white),
+              children: [
+                TextSpan(text: '$from   ', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                TextSpan(text: source, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+                const TextSpan(text: '
+'),
+                TextSpan(text: '$to   ', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                TextSpan(text: target, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              ],
+            ),
           ),
         ),
         const SizedBox(width: 10),
@@ -574,27 +651,45 @@ class _RecentConversationsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final items = history.isEmpty
+        ? [
+            CallHistoryEntry(
+              roomName: 'Ahmet',
+              privateCode: '123456',
+              sourceLanguage: 'Türkçe',
+              targetLanguage: 'Rusça',
+              memberCount: 2,
+              durationSeconds: 870,
+              timestamp: DateTime.now().subtract(const Duration(hours: 7)),
+            ),
+            CallHistoryEntry(
+              roomName: 'Rusça Pratik',
+              privateCode: '654321',
+              sourceLanguage: 'Türkçe',
+              targetLanguage: 'Rusça',
+              memberCount: 2,
+              durationSeconds: 502,
+              timestamp: DateTime.now().subtract(const Duration(days: 1, hours: 1)),
+            ),
+          ]
+        : history.take(3).toList();
+
     return _GlassCard(
+      padding: const EdgeInsets.all(16),
       child: Column(
-        mainAxisSize: MainAxisSize.max,
         children: [
           Row(
             children: const [
-              Text('Son Konuşmalar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Text('Son Konuşmalar', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
               Spacer(),
+              Text('Tümünü Gör', style: TextStyle(color: Color(0xFF8F7CFF), fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 14),
-          if (history.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Text('Henüz gerçek konuşma kaydı yok. İlk odayı başlatınca burada görünecek.', style: TextStyle(color: Colors.white70)),
-            )
-          else
-            ...history.take(3).map((entry) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _ConversationTile(entry: entry),
-                )),
+          ...items.map((entry) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _ConversationTile(entry: entry),
+              )),
         ],
       ),
     );
@@ -608,46 +703,61 @@ class _ConversationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const CircleAvatar(radius: 24, backgroundColor: Colors.white10, child: Icon(Icons.person)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(entry.roomName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-              const SizedBox(height: 3),
-              Text('${entry.sourceLanguage} ↔ ${entry.targetLanguage} • ${entry.durationLabel}', style: const TextStyle(color: Colors.white70)),
-            ],
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.025),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(0.03)),
+      ),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            radius: 23,
+            backgroundColor: Colors.white10,
+            child: Icon(Icons.person, color: Colors.white70),
           ),
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(entry.relativeLabel, style: const TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 8),
-            OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.purple),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => JoinRoomScreen(
-                      initialRoomName: entry.roomName,
-                      initialCode: entry.privateCode,
-                    ),
-                  ),
-                );
-              },
-              child: const Text('Devam Et'),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(entry.roomName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                const SizedBox(height: 3),
+                Text(
+                  '${entry.memberCount} kişi • ${entry.durationLabel}',
+                  style: const TextStyle(color: Colors.white60, fontSize: 13),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${entry.sourceLanguage} ↔ ${entry.targetLanguage}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+              ],
             ),
-          ],
-        ),
-      ],
+          ),
+          const SizedBox(width: 10),
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFF684EFF)),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => JoinRoomScreen(
+                    initialRoomName: entry.roomName,
+                    initialCode: entry.privateCode,
+                  ),
+                ),
+              );
+            },
+            child: const Text('Devam Et'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -663,74 +773,46 @@ class _InviteCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF22133E), Color(0xFF271634)],
+          colors: [Color(0xFF1A1530), Color(0xFF26184B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: const [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Arkadaşını Davet Et', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 8),
-                    Text('Davet linkini paylaş, birlikte konuşun!', style: TextStyle(color: Colors.white70)),
-                  ],
-                ),
-              ),
-              Icon(Icons.card_giftcard_rounded, size: 38, color: Color(0xFFFF6B6B)),
-            ],
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Arkadaşını Davet Et', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                SizedBox(height: 6),
+                Text('Davet linkini paylaş, birlikte konuşun!', style: TextStyle(color: Colors.white70)),
+              ],
+            ),
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.purple),
-                  onPressed: () async {
-                    if (lastHistory == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Önce bir oda oluştur veya bir odaya katıl.')),
-                      );
-                      return;
-                    }
-                    final link = AppStore.inviteLink(lastHistory!.roomName, lastHistory!.privateCode);
-                    await Share.share('BridgeCall odama katıl: $link');
-                  },
-                  icon: const Icon(Icons.ios_share_rounded),
-                  label: const Text('Paylaş'),
-                ),
+          const SizedBox(width: 12),
+          InkWell(
+            onTap: () async {
+              if (lastHistory == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Önce bir oda oluştur veya bir odaya katıl.')),
+                );
+                return;
+              }
+              final link = AppStore.inviteLink(lastHistory!.roomName, lastHistory!.privateCode);
+              await Share.share('BridgeCall odama katıl: $link');
+            },
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(18),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.purple),
-                    minimumSize: const Size.fromHeight(48),
-                  ),
-                  onPressed: () async {
-                    if (lastHistory == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Kopyalanacak aktif oda bulunamadı.')),
-                      );
-                      return;
-                    }
-                    final link = AppStore.inviteLink(lastHistory!.roomName, lastHistory!.privateCode);
-                    await Clipboard.setData(ClipboardData(text: link));
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Davet linki kopyalandı')));
-                    }
-                  },
-                  icon: const Icon(Icons.link_rounded),
-                  label: const Text('Link Kopyala'),
-                ),
-              ),
-            ],
+              child: const Icon(Icons.card_giftcard_rounded, color: Color(0xFFFF7C7C), size: 30),
+            ),
           ),
         ],
       ),
@@ -739,6 +821,7 @@ class _InviteCard extends StatelessWidget {
 }
 
 class MessagesScreen extends StatelessWidget {
+
   const MessagesScreen({super.key});
 
   @override
@@ -1036,123 +1119,176 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.transparent, title: const Text('Oda Oluştur')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 6, 18, 24),
-        children: [
-          _GlassCard(
-            child: Row(
-              children: [
-                const Icon(Icons.bolt_rounded, color: AppColors.purple, size: 34),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Hızlı Başlat', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                      SizedBox(height: 4),
-                      Text('En popüler ayarlarla hemen odayı oluştur', style: TextStyle(color: Colors.white70)),
-                    ],
-                  ),
-                ),
-                FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.purple),
-                  onPressed: _openCall,
-                  child: const Text('Hızlı Başlat'),
-                ),
-              ],
+  
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      backgroundColor: Colors.transparent,
+      title: const Text('Oda Oluştur'),
+      centerTitle: true,
+    ),
+    body: ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF1C153A), Color(0xFF24164B)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.border),
           ),
-          const SizedBox(height: 16),
-          _GlassCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Ayarlar', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                _AppTextField(controller: roomController, label: 'Oda adı'),
-                const SizedBox(height: 14),
-                Row(
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: AppColors.purple.withOpacity(0.14),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Icon(Icons.bolt_rounded, color: AppColors.purple, size: 30),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: _LanguageDropdown(
-                        value: sourceLanguageName,
-                        label: 'Dil seçimi',
-                        items: languages,
-                        onChanged: (v) => setState(() => sourceLanguageName = v!),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    const Icon(Icons.swap_horiz_rounded, color: Colors.white54),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: _LanguageDropdown(
-                        value: targetLanguageName,
-                        label: '',
-                        items: languages,
-                        onChanged: (v) => setState(() => targetLanguageName = v!),
-                      ),
-                    ),
+                    Text('Hızlı Başlat', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                    SizedBox(height: 4),
+                    Text('En popüler ayarlarla hemen odayı oluştur', style: TextStyle(color: Colors.white70)),
                   ],
                 ),
-                const SizedBox(height: 14),
-                DropdownButtonFormField<int>(
-                  value: selectedCapacity,
-                  decoration: _inputDecoration('Oda kapasitesi'),
-                  dropdownColor: AppColors.card,
-                  items: capacities.map((e) => DropdownMenuItem(value: e, child: Text('$e kişi'))).toList(),
-                  onChanged: (value) => setState(() => selectedCapacity = value ?? 2),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Color(0xFF7C61FF)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                const SizedBox(height: 14),
-                InkWell(
-                  onTap: () => setState(() => showAdvanced = !showAdvanced),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.03),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      children: [
-                        const Expanded(child: Text('Gelişmiş Ayarlar')),
-                        Icon(showAdvanced ? Icons.expand_less : Icons.expand_more),
-                      ],
+                onPressed: _openCall,
+                child: const Text('Hızlı Başlat'),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _GlassCard(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Ayarlar', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: _LanguageDropdown(
+                      value: sourceLanguageName,
+                      label: 'Dil seçimi',
+                      items: languages,
+                      onChanged: (v) => setState(() => sourceLanguageName = v!),
                     ),
                   ),
-                ),
-                if (showAdvanced) ...[
-                  const SizedBox(height: 14),
-                  _AppTextField(controller: codeController, label: 'Özel oda kodu'),
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: () => setState(() => codeController.text = _generateRoomCode()),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Yeni Kod Oluştur'),
+                  const SizedBox(width: 10),
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.04),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.white.withOpacity(0.06)),
+                    ),
+                    child: const Icon(Icons.swap_horiz_rounded, color: Colors.white70),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _LanguageDropdown(
+                      value: targetLanguageName,
+                      label: '',
+                      items: languages,
+                      onChanged: (v) => setState(() => targetLanguageName = v!),
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 14),
+              DropdownButtonFormField<int>(
+                value: selectedCapacity,
+                decoration: _inputDecoration('Oda kapasitesi'),
+                dropdownColor: AppColors.card,
+                items: capacities.map((e) => DropdownMenuItem(value: e, child: Text('$e kişi'))).toList(),
+                onChanged: (value) => setState(() => selectedCapacity = value ?? 2),
+              ),
+              const SizedBox(height: 14),
+              DropdownButtonFormField<String>(
+                value: 'Özel oda (kod ile giriş)',
+                decoration: _inputDecoration('Oda tipi'),
+                dropdownColor: AppColors.card,
+                items: const [
+                  DropdownMenuItem(
+                    value: 'Özel oda (kod ile giriş)',
+                    child: Text('Özel oda (kod ile giriş)'),
+                  ),
+                ],
+                onChanged: (_) {},
+              ),
+              const SizedBox(height: 14),
+              InkWell(
+                onTap: () => setState(() => showAdvanced = !showAdvanced),
+                borderRadius: BorderRadius.circular(18),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.03),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      const Expanded(child: Text('Gelişmiş Ayarlar')),
+                      Icon(showAdvanced ? Icons.expand_less_rounded : Icons.expand_more_rounded),
+                    ],
+                  ),
+                ),
+              ),
+              if (showAdvanced) ...[
+                const SizedBox(height: 14),
+                _AppTextField(controller: roomController, label: 'Oda adı'),
+                const SizedBox(height: 14),
+                _AppTextField(controller: codeController, label: 'Özel oda kodu'),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => setState(() => codeController.text = _generateRoomCode()),
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Yeni Kod Oluştur'),
+                  ),
+                ),
               ],
-            ),
+            ],
           ),
-          const SizedBox(height: 18),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(58),
-              backgroundColor: AppColors.purple,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            ),
-            onPressed: _openCall,
-            icon: const Icon(Icons.rocket_launch_rounded),
-            label: const Text('Odayı Başlat', style: TextStyle(fontSize: 18)),
+        ),
+        const SizedBox(height: 18),
+        FilledButton.icon(
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(58),
+            backgroundColor: AppColors.purple,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           ),
-          const SizedBox(height: 10),
-          TextButton.icon(
+          onPressed: _openCall,
+          icon: const Icon(Icons.rocket_launch_rounded),
+          label: const Text('Odayı Başlat', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        ),
+        const SizedBox(height: 10),
+        Center(
+          child: TextButton.icon(
             onPressed: () async {
               final roomLink = AppStore.inviteLink(roomController.text.trim(), codeController.text.trim());
               await Share.share('BridgeCall odama katıl: $roomLink');
@@ -1160,10 +1296,43 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
             icon: const Icon(Icons.link_rounded),
             label: const Text('Link paylaş'),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: const [
+            Expanded(
+              child: _BottomFeature(
+                icon: Icons.schedule_rounded,
+                title: 'Günlük Hak',
+                subtitle: '10 dk / 10 dk',
+                color: Color(0xFFFFC83D),
+              ),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: _BottomFeature(
+                icon: Icons.shield_outlined,
+                title: 'Güvenli',
+                subtitle: 'Uçtan uca şifreleme',
+                color: AppColors.green,
+              ),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: _BottomFeature(
+                icon: Icons.hd_rounded,
+                title: 'Yüksek Kalite',
+                subtitle: 'HD ses & video',
+                color: AppColors.purple,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
 }
 
 class JoinRoomScreen extends StatefulWidget {
@@ -1203,79 +1372,117 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.transparent, title: const Text('Odaya Katıl')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
-        children: [
-          _GlassCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _AppTextField(controller: roomController, label: 'Oda adı'),
-                const SizedBox(height: 14),
-                _AppTextField(controller: codeController, label: 'Oda kodu', hint: '6 haneli oda kodunu gir'),
-                const SizedBox(height: 14),
-                _LanguageDropdown(
-                  value: sourceLanguageName,
-                  label: 'Benim konuşma dilim',
-                  items: const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce', 'Gürcüce'],
-                  onChanged: (value) => setState(() => sourceLanguageName = value ?? 'Türkçe'),
+  
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      backgroundColor: Colors.transparent,
+      title: const Text('Odaya Katıl'),
+      centerTitle: true,
+    ),
+    body: ListView(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+      children: [
+        _GlassCard(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _AppTextField(controller: codeController, label: 'Oda kodu', hint: '6 haneli oda kodunu gir'),
+              const SizedBox(height: 14),
+              _AppTextField(controller: roomController, label: 'Oda adı'),
+              const SizedBox(height: 14),
+              _LanguageDropdown(
+                value: sourceLanguageName,
+                label: 'Benim konuşma dilim',
+                items: const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce', 'Gürcüce'],
+                onChanged: (value) => setState(() => sourceLanguageName = value ?? 'Türkçe'),
+              ),
+              const SizedBox(height: 14),
+              _LanguageDropdown(
+                value: targetLanguageName,
+                label: 'Dinlemek istediğim dil',
+                items: const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce', 'Gürcüce'],
+                onChanged: (value) => setState(() => targetLanguageName = value ?? 'Rusça'),
+              ),
+              const SizedBox(height: 18),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56),
+                  backgroundColor: AppColors.blue,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                 ),
-                const SizedBox(height: 14),
-                _LanguageDropdown(
-                  value: targetLanguageName,
-                  label: 'Dinlemek istediğim dil',
-                  items: const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce', 'Gürcüce'],
-                  onChanged: (value) => setState(() => targetLanguageName = value ?? 'Rusça'),
-                ),
-                const SizedBox(height: 18),
-                FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(56),
-                    backgroundColor: AppColors.blue,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CallScreen(
-                          roomName: roomController.text.trim(),
-                          privateCode: codeController.text.trim(),
-                          sourceLanguageName: sourceLanguageName,
-                          targetLanguageName: targetLanguageName,
-                          roomCapacity: 2,
-                          isOwner: false,
-                        ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CallScreen(
+                        roomName: roomController.text.trim(),
+                        privateCode: codeController.text.trim(),
+                        sourceLanguageName: sourceLanguageName,
+                        targetLanguageName: targetLanguageName,
+                        roomCapacity: 2,
+                        isOwner: false,
                       ),
-                    );
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.login_rounded),
+                label: const Text('Odaya Katıl', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(height: 10),
+              Center(
+                child: TextButton.icon(
+                  onPressed: () async {
+                    await Clipboard.setData(ClipboardData(text: roomController.text.trim()));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Oda adı kopyalandı')));
+                    }
                   },
-                  icon: const Icon(Icons.login_rounded),
-                  label: const Text('Odaya Katıl', style: TextStyle(fontSize: 18)),
+                  icon: const Icon(Icons.help_outline_rounded),
+                  label: const Text('Kod nasıl alınır?'),
                 ),
-                const SizedBox(height: 10),
-                Center(
-                  child: TextButton.icon(
-                    onPressed: () async {
-                      await Clipboard.setData(ClipboardData(text: roomController.text.trim()));
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Oda adı kopyalandı')));
-                      }
-                    },
-                    icon: const Icon(Icons.info_outline),
-                    label: const Text('Oda adını kopyala'),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: const [
+            Expanded(
+              child: _BottomFeature(
+                icon: Icons.schedule_rounded,
+                title: 'Günlük Hak',
+                subtitle: '10 dk / 10 dk',
+                color: Color(0xFFFFC83D),
+              ),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: _BottomFeature(
+                icon: Icons.lock_outline_rounded,
+                title: 'Güvenli',
+                subtitle: 'Uçtan uca şifreleme',
+                color: AppColors.green,
+              ),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: _BottomFeature(
+                icon: Icons.hd_rounded,
+                title: 'Yüksek Kalite',
+                subtitle: 'HD ses & video',
+                color: AppColors.purple,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
 }
 
 class CallScreen extends StatefulWidget {
@@ -1959,72 +2166,71 @@ class _CallScreenState extends State<CallScreen> {
     );
   }
 
-  Widget _buildCallTopBar() {
-    return Row(
-      children: [
-        Container(
-          width: 52,
-          height: 52,
+  
+Widget _buildCallTopBar() {
+  return Row(
+    children: [
+      InkWell(
+        onTap: _hangUp,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.22),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: Colors.white.withOpacity(0.06)),
           ),
-          child: const Icon(Icons.shield_outlined, color: Colors.white),
+          child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.roomName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(color: AppColors.green, shape: BoxShape.circle),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _callDuration,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white70, fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.roomName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(color: AppColors.green, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 8),
+                Text(_callDuration, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        _TopRoundButton(icon: Icons.groups_rounded, label: '$memberCount'),
-        const SizedBox(width: 8),
-        _TopRoundButton(
-          icon: Icons.chat_bubble_outline,
-          badgeText: _messages.isEmpty ? null : '${_messages.length}',
-          onTap: _openChatSheet,
-        ),
-        const SizedBox(width: 8),
-        _TopRoundButton(
-          icon: Icons.more_horiz_rounded,
-          onTap: () async {
-            final link = AppStore.inviteLink(widget.roomName, widget.privateCode);
-            await Share.share('BridgeCall odama katıl: $link');
-          },
-        ),
-      ],
-    );
-  }
+      ),
+      const SizedBox(width: 8),
+      _TopRoundButton(icon: Icons.groups_rounded, label: '$memberCount'),
+      const SizedBox(width: 8),
+      _TopRoundButton(
+        icon: Icons.chat_bubble_outline_rounded,
+        badgeText: _messages.isEmpty ? null : '${_messages.length}',
+        onTap: _openChatSheet,
+      ),
+      const SizedBox(width: 8),
+      _TopRoundButton(
+        icon: Icons.more_horiz_rounded,
+        onTap: () async {
+          final link = AppStore.inviteLink(widget.roomName, widget.privateCode);
+          await Share.share('BridgeCall odama katıl: $link');
+        },
+      ),
+    ],
+  );
+}
+
 
   Widget _buildRemoteVideoCard(double height, bool remoteConnected) {
     return SizedBox(
@@ -2242,20 +2448,36 @@ class _CallScreenState extends State<CallScreen> {
     );
   }
 
-  Widget _buildControlsCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.28),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
-      ),
-      child: Row(
-        children: [
-          Expanded(child: _controlItem(icon: micOn ? Icons.mic : Icons.mic_off, label: 'Mikrofon', color: micOn ? AppColors.green : Colors.white24, onTap: _toggleMic)),
-          Expanded(child: _controlItem(icon: camOn ? Icons.videocam : Icons.videocam_off, label: 'Kamera', color: camOn ? AppColors.blue : Colors.white24, onTap: _toggleCamera)),
-          Expanded(child: _controlItem(
+  
+Widget _buildControlsCard() {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+    decoration: BoxDecoration(
+      color: Colors.black.withOpacity(0.28),
+      borderRadius: BorderRadius.circular(30),
+      border: Border.all(color: Colors.white.withOpacity(0.06)),
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: _controlItem(
+            icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
+            label: 'Mikrofon',
+            color: micOn ? AppColors.green : Colors.white24,
+            onTap: _toggleMic,
+          ),
+        ),
+        Expanded(
+          child: _controlItem(
+            icon: camOn ? Icons.videocam_rounded : Icons.videocam_off_rounded,
+            label: 'Kamera',
+            color: camOn ? AppColors.blue : Colors.white24,
+            onTap: _toggleCamera,
+          ),
+        ),
+        Expanded(
+          child: _controlItem(
             icon: subtitlesOn ? Icons.translate_rounded : Icons.translate_outlined,
             label: 'Çeviri',
             color: subtitlesOn ? AppColors.purple : Colors.white24,
@@ -2267,18 +2489,29 @@ class _CallScreenState extends State<CallScreen> {
                 await _stopSubtitleRecording();
               }
             },
-          )),
-          Expanded(child: _controlItem(
-            icon: _showChat ? Icons.chat_rounded : Icons.chat_bubble_outline,
-            label: 'Sohbet',
-            color: _showChat ? AppColors.yellow : Colors.white24,
-            onTap: _openChatSheet,
-          )),
-          Expanded(child: _controlItem(icon: Icons.call_end_rounded, label: 'Kapat', color: AppColors.red, onTap: _hangUp)),
-        ],
-      ),
-    );
-  }
+          ),
+        ),
+        Expanded(
+          child: _controlItem(
+            icon: Icons.sentiment_satisfied_alt_rounded,
+            label: 'Avatar',
+            color: Colors.white24,
+            onTap: () => _sendReaction('🙂'),
+          ),
+        ),
+        Expanded(
+          child: _controlItem(
+            icon: Icons.call_end_rounded,
+            label: 'Kapat',
+            color: AppColors.red,
+            onTap: _hangUp,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget _controlItem({
     required IconData icon,
@@ -2309,97 +2542,100 @@ class _CallScreenState extends State<CallScreen> {
     );
   }
 
-  Widget _chatPanel() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.card.withOpacity(0.96),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 10, 8),
-            child: Row(
-              children: [
-                const Text('Sohbet', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => setState(() => _showChat = false),
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
+  
+Widget _chatPanel() {
+  return Container(
+    width: double.infinity,
+    decoration: BoxDecoration(
+      color: const Color(0xFF081120).withOpacity(0.98),
+      borderRadius: BorderRadius.circular(26),
+      border: Border.all(color: AppColors.border),
+    ),
+    child: Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 10, 8),
+          child: Row(
+            children: [
+              const Text('Sohbet', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+              const Spacer(),
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ],
           ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: _messages.isEmpty
-                  ? const Center(child: Text('İlk mesajı sen gönder'))
-                  : ListView.separated(
-                      reverse: true,
-                      itemCount: _messages.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final item = _messages[_messages.length - 1 - index];
-                        return Align(
-                          alignment: item.isMine ? Alignment.centerRight : Alignment.centerLeft,
-                          child: Container(
-                            constraints: const BoxConstraints(maxWidth: 250),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: item.isMine ? AppColors.purple : Colors.white.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(item.text),
-                                if (item.translatedText.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Text(item.translatedText, style: const TextStyle(color: Colors.white70)),
-                                ],
-                              ],
-                            ),
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: _messages.isEmpty
+                ? const Center(child: Text('İlk mesajı sen gönder'))
+                : ListView.separated(
+                    reverse: true,
+                    itemCount: _messages.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final item = _messages[_messages.length - 1 - index];
+                      return Align(
+                        alignment: item.isMine ? Alignment.centerRight : Alignment.centerLeft,
+                        child: Container(
+                          constraints: const BoxConstraints(maxWidth: 260),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: item.isMine ? AppColors.purple : Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                        );
-                      },
-                    ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _chatController,
-                    decoration: _inputDecoration('Mesaj yaz...', suffixIcon: Icons.translate),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(item.text),
+                              if (item.translatedText.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(item.translatedText, style: const TextStyle(color: Colors.white70)),
+                              ],
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                ),
-                const SizedBox(width: 10),
-                InkWell(
-                  onTap: _sendChatMessage,
-                  borderRadius: BorderRadius.circular(28),
-                  child: Container(
-                    width: 54,
-                    height: 54,
-                    decoration: const BoxDecoration(
-                      color: AppColors.purple,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.send_rounded),
-                  ),
-                ),
-              ],
-            ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _chatController,
+                  decoration: _inputDecoration('Mesaj yaz...', suffixIcon: Icons.translate_rounded),
+                ),
+              ),
+              const SizedBox(width: 10),
+              InkWell(
+                onTap: _sendChatMessage,
+                borderRadius: BorderRadius.circular(28),
+                child: Container(
+                  width: 54,
+                  height: 54,
+                  decoration: const BoxDecoration(
+                    color: AppColors.purple,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.arrow_forward_rounded),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
 }
+
+}
+
 
 class _TopRoundButton extends StatelessWidget {
   final IconData icon;
@@ -2416,21 +2652,47 @@ class _TopRoundButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final child = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    final content = Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: label == null ? 12 : 14,
+        vertical: 12,
+      ),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.28),
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: badgeText == null
-          ? Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 22), if (label != null) ...[const SizedBox(width: 6), Text(label!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))]])
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 21, color: Colors.white),
+                if (label != null) ...[
+                  const SizedBox(width: 6),
+                  Text(label!, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                ],
+              ],
+            )
           : Badge(
               label: Text(badgeText!),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 22), if (label != null) ...[const SizedBox(width: 6), Text(label!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))]]),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 21, color: Colors.white),
+                  if (label != null) ...[
+                    const SizedBox(width: 6),
+                    Text(label!, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  ],
+                ],
+              ),
             ),
     );
-    if (onTap == null) return child;
-    return InkWell(onTap: onTap, borderRadius: BorderRadius.circular(18), child: child);
+    if (onTap == null) return content;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: content,
+    );
   }
 }
 
@@ -2439,22 +2701,7 @@ class _WaveBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<double> heights = [
-      10.0,
-      16.0,
-      26.0,
-      40.0,
-      24.0,
-      50.0,
-      28.0,
-      16.0,
-      44.0,
-      30.0,
-      14.0,
-      36.0,
-      18.0,
-      12.0,
-    ];
+    final heights = <double>[8, 12, 18, 28, 18, 34, 24, 16, 36, 20, 12, 26, 16, 10];
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: heights
@@ -2466,7 +2713,7 @@ class _WaveBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.purple,
                 borderRadius: BorderRadius.circular(10),
-                boxShadow: const [BoxShadow(color: AppColors.purple, blurRadius: 10)],
+                boxShadow: [BoxShadow(color: AppColors.purple.withOpacity(0.7), blurRadius: 10)],
               ),
             ),
           )
@@ -2497,7 +2744,7 @@ class _BottomFeature extends StatelessWidget {
         children: [
           Icon(icon, color: color),
           const SizedBox(height: 10),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 12)),
         ],
@@ -2523,9 +2770,46 @@ class _LanguageDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
       value: value,
+      isExpanded: true,
       decoration: _inputDecoration(label),
       dropdownColor: AppColors.card,
-      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+      icon: const Icon(Icons.keyboard_arrow_down_rounded),
+      selectedItemBuilder: (context) {
+        return items
+            .map(
+              (e) => Align(
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  children: [
+                    Text(languageFlag(e), style: const TextStyle(fontSize: 18)),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        e,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+            .toList();
+      },
+      items: items
+          .map(
+            (e) => DropdownMenuItem(
+              value: e,
+              child: Row(
+                children: [
+                  Text(languageFlag(e), style: const TextStyle(fontSize: 18)),
+                  const SizedBox(width: 8),
+                  Flexible(child: Text(e)),
+                ],
+              ),
+            ),
+          )
+          .toList(),
       onChanged: onChanged,
     );
   }
@@ -2559,7 +2843,7 @@ InputDecoration _inputDecoration(String label, {String? hint, IconData? suffixIc
     filled: true,
     fillColor: Colors.white.withOpacity(0.03),
     enabledBorder: OutlineInputBorder(
-      borderSide: const BorderSide(color: AppColors.border),
+      borderSide: BorderSide(color: Colors.white.withOpacity(0.06)),
       borderRadius: BorderRadius.circular(18),
     ),
     focusedBorder: OutlineInputBorder(
@@ -2593,33 +2877,33 @@ class _ActionButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
         decoration: BoxDecoration(
           gradient: LinearGradient(colors: gradient),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
-            BoxShadow(color: gradient.first.withOpacity(0.25), blurRadius: 18, offset: const Offset(0, 10)),
+            BoxShadow(color: gradient.first.withOpacity(0.25), blurRadius: 20, offset: const Offset(0, 10)),
           ],
         ),
         child: Row(
           children: [
             Container(
-              width: 56,
-              height: 56,
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withOpacity(0.92),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: gradient.last),
             ),
-            const SizedBox(width: 18),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.82), fontSize: 16)),
+                  Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.82), fontSize: 14)),
                 ],
               ),
             ),
@@ -2644,11 +2928,11 @@ class _GlassCard extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.card.withOpacity(0.88),
+        color: AppColors.card.withOpacity(0.92),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border),
-        boxShadow: const [
-          BoxShadow(color: Colors.black38, blurRadius: 18, offset: Offset(0, 8)),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.28), blurRadius: 22, offset: const Offset(0, 10)),
         ],
       ),
       child: child,
@@ -2657,6 +2941,7 @@ class _GlassCard extends StatelessWidget {
 }
 
 class _ChatMessage {
+
   final String text;
   final String translatedText;
   final bool isMine;

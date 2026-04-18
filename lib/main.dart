@@ -1315,7 +1315,7 @@ class _CallScreenState extends State<CallScreen> {
   bool subtitlesOn = true;
   bool cameraStarted = false;
   bool isRecording = false;
-  bool _showChat = true;
+  bool _showChat = false;
   bool _isConnecting = false;
   bool _historySaved = false;
 
@@ -1863,65 +1863,25 @@ class _CallScreenState extends State<CallScreen> {
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final size = media.size;
-    final isWide = size.width >= 900;
-    final isCompactPhone = size.height < 760;
     final remoteConnected = _remoteRenderer.srcObject != null;
+    final bottomInset = media.padding.bottom;
+
+    final topBarHeight = 58.0;
+    final videoHeight = size.height * 0.34;
+    final subtitleHeight = size.height * 0.19;
+    final codeHeight = 50.0;
+    final waveHeight = 34.0;
+    final controlsHeight = 118.0;
 
     return Scaffold(
+      backgroundColor: AppColors.bg,
       body: Stack(
         children: [
           Positioned.fill(
-            child: remoteConnected
-                ? RTCVideoView(
-                    _remoteRenderer,
-                    objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                  )
-                : Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF060A18), Color(0xFF0A1023), Color(0xFF131026)],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 84,
-                            height: 84,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.05),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.videocam_off_rounded, size: 40, color: Colors.white38),
-                          ),
-                          const SizedBox(height: 14),
-                          Text(
-                            widget.isOwner ? 'Katılımcı bekleniyor' : 'Bağlantı kuruluyor',
-                            style: const TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _cleanStatusText,
-                            style: const TextStyle(color: Colors.white38, fontSize: 13),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-          ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
+            child: Container(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Colors.black.withOpacity(0.52),
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.70),
-                  ],
+                  colors: [Color(0xFF040714), Color(0xFF071126), Color(0xFF080C19)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
@@ -1929,87 +1889,69 @@ class _CallScreenState extends State<CallScreen> {
             ),
           ),
           SafeArea(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: isWide ? 1000 : 680),
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(isWide ? 24 : 14, 12, isWide ? 24 : 14, 10),
-                  child: Stack(
-                    children: [
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final reactionWidth = isWide ? 68.0 : 56.0;
-                          final verticalGap = isCompactPhone ? 10.0 : 14.0;
-                          final topBarHeight = isCompactPhone ? 58.0 : 64.0;
-                          final bottomSectionHeight = isCompactPhone ? 148.0 : 176.0;
-                          final chatHeight = _showChat ? (isCompactPhone ? 176.0 : 208.0) : 0.0;
-                          final availableHeight = constraints.maxHeight - topBarHeight - bottomSectionHeight - chatHeight - (verticalGap * (_showChat ? 4 : 3));
-                          final videoHeight = (availableHeight * (isCompactPhone ? 0.53 : 0.58)).clamp(220.0, isWide ? 520.0 : 430.0);
-                          final subtitleHeight = (availableHeight - videoHeight).clamp(120.0, isWide ? 220.0 : 200.0);
-
-                          return Column(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Column(
+                children: [
+                  SizedBox(height: topBarHeight, child: _buildCallTopBar()),
+                  const SizedBox(height: 14),
+                  SizedBox(height: videoHeight, child: _buildRemoteVideoCard(videoHeight, remoteConnected)),
+                  const SizedBox(height: 14),
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
                             children: [
-                              SizedBox(height: topBarHeight, child: _buildCallTopBar()),
-                              SizedBox(height: verticalGap),
-                              SizedBox(
-                                height: videoHeight,
-                                child: _buildRemoteVideoCard(videoHeight, remoteConnected),
-                              ),
-                              SizedBox(height: verticalGap),
-                              SizedBox(
-                                height: subtitleHeight,
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    Expanded(child: _buildSubtitleCard()),
-                                    const SizedBox(width: 10),
-                                    SizedBox(width: reactionWidth, child: _buildReactionRail()),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: verticalGap),
-                              _buildRoomCodeChip(),
+                              SizedBox(height: subtitleHeight, child: _buildSubtitleCard()),
                               const SizedBox(height: 12),
-                              const SizedBox(height: 34, child: _WaveBar()),
-                              const SizedBox(height: 6),
-                              Text(
-                                isRecording ? 'Sen konuşuyorsun...' : _cleanStatusText,
-                                style: const TextStyle(color: Colors.white60, fontSize: 13),
-                                textAlign: TextAlign.center,
-                              ),
-                              SizedBox(height: verticalGap),
-                              SizedBox(
-                                height: isCompactPhone ? 118 : 132,
-                                child: _buildControlsCard(),
-                              ),
-                              if (_showChat) ...[
-                                SizedBox(height: verticalGap),
-                                SizedBox(height: isCompactPhone ? 176 : 208, child: _chatPanel()),
-                              ],
+                              SizedBox(height: codeHeight, child: _buildRoomCodeChip()),
+                              const SizedBox(height: 14),
+                              SizedBox(height: waveHeight, child: const _WaveBar()),
+                              const SizedBox(height: 8),
+                              if (!_showChat)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Text(
+                                    isRecording ? 'Sen konuşuyorsun...' : _cleanStatusText,
+                                    style: const TextStyle(color: Colors.white60, fontSize: 12),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              if (_showChat)
+                                Expanded(child: _chatPanel())
+                              else
+                                const Spacer(),
                             ],
-                          );
-                        },
-                      ),
-                      if (_reactionEmoji != null)
-                        Positioned(
-                          right: 14,
-                          top: isCompactPhone ? 74 : 86,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.45),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white.withOpacity(0.08)),
-                            ),
-                            child: Text(_reactionEmoji!, style: const TextStyle(fontSize: 34)),
                           ),
                         ),
-                    ],
+                        const SizedBox(width: 12),
+                        _buildReactionRail(),
+                      ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  SizedBox(height: controlsHeight, child: _buildControlsCard()),
+                  SizedBox(height: bottomInset > 0 ? 8 : 14),
+                ],
               ),
             ),
           ),
+          if (_reactionEmoji != null)
+            Positioned(
+              right: 18,
+              top: 92,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.45),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                ),
+                child: Text(_reactionEmoji!, style: const TextStyle(fontSize: 30)),
+              ),
+            ),
         ],
       ),
     );
@@ -2031,6 +1973,7 @@ class _CallScreenState extends State<CallScreen> {
         const SizedBox(width: 12),
         Expanded(
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -2050,7 +1993,7 @@ class _CallScreenState extends State<CallScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '$_callDuration • $_statusPillText',
+                      _callDuration,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: Colors.white70, fontSize: 13),
@@ -2132,8 +2075,8 @@ class _CallScreenState extends State<CallScreen> {
             right: 14,
             top: 14,
             child: Container(
-              width: 110,
-              height: 150,
+              width: 108,
+              height: 148,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(color: Colors.white.withOpacity(0.10)),
@@ -2175,7 +2118,7 @@ class _CallScreenState extends State<CallScreen> {
   Widget _buildSubtitleCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.34),
         borderRadius: BorderRadius.circular(28),
@@ -2183,10 +2126,11 @@ class _CallScreenState extends State<CallScreen> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _subtitleRow('$sourceLanguageName (Sen)', subtitleText, AppColors.purple),
-          Container(margin: const EdgeInsets.symmetric(vertical: 14), height: 1, color: Colors.white.withOpacity(0.08)),
-          _subtitleRow(targetLanguageName, translatedText, AppColors.blue),
+          Expanded(child: _subtitleRow('$sourceLanguageName (Sen)', subtitleText, AppColors.purple)),
+          Container(margin: const EdgeInsets.symmetric(vertical: 10), height: 1, color: Colors.white.withOpacity(0.08)),
+          Expanded(child: _subtitleRow('$targetLanguageName (Karşı taraf)', translatedText, AppColors.blue)),
         ],
       ),
     );
@@ -2199,6 +2143,7 @@ class _CallScreenState extends State<CallScreen> {
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(title, style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
@@ -2206,13 +2151,16 @@ class _CallScreenState extends State<CallScreen> {
                 value,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 18, height: 1.35, fontWeight: FontWeight.w600),
+                style: const TextStyle(fontSize: 18, height: 1.28, fontWeight: FontWeight.w600),
               ),
             ],
           ),
         ),
         const SizedBox(width: 10),
-        Icon(Icons.graphic_eq_rounded, color: color, size: 24),
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Icon(Icons.graphic_eq_rounded, color: color, size: 24),
+        ),
       ],
     );
   }
@@ -2227,7 +2175,7 @@ class _CallScreenState extends State<CallScreen> {
         border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisSize: MainAxisSize.min,
         children: [
           for (final emoji in ['👍', '😍', '😂', '😮', '👏'])
             Padding(
@@ -2295,7 +2243,7 @@ class _CallScreenState extends State<CallScreen> {
   Widget _buildControlsCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.28),
         borderRadius: BorderRadius.circular(28),
@@ -2305,29 +2253,25 @@ class _CallScreenState extends State<CallScreen> {
         children: [
           Expanded(child: _controlItem(icon: micOn ? Icons.mic : Icons.mic_off, label: 'Mikrofon', color: micOn ? AppColors.green : Colors.white24, onTap: _toggleMic)),
           Expanded(child: _controlItem(icon: camOn ? Icons.videocam : Icons.videocam_off, label: 'Kamera', color: camOn ? AppColors.blue : Colors.white24, onTap: _toggleCamera)),
-          Expanded(
-            child: _controlItem(
-              icon: subtitlesOn ? Icons.translate_rounded : Icons.translate_outlined,
-              label: 'Çeviri',
-              color: subtitlesOn ? AppColors.purple : Colors.white24,
-              onTap: () async {
-                setState(() => subtitlesOn = !subtitlesOn);
-                if (subtitlesOn && micOn) {
-                  await _startSubtitleRecording();
-                } else {
-                  await _stopSubtitleRecording();
-                }
-              },
-            ),
-          ),
-          Expanded(
-            child: _controlItem(
-              icon: _showChat ? Icons.chat_rounded : Icons.chat_bubble_outline,
-              label: 'Sohbet',
-              color: _showChat ? AppColors.yellow : Colors.white24,
-              onTap: () => setState(() => _showChat = !_showChat),
-            ),
-          ),
+          Expanded(child: _controlItem(
+            icon: subtitlesOn ? Icons.translate_rounded : Icons.translate_outlined,
+            label: 'Çeviri',
+            color: subtitlesOn ? AppColors.purple : Colors.white24,
+            onTap: () async {
+              setState(() => subtitlesOn = !subtitlesOn);
+              if (subtitlesOn && micOn) {
+                await _startSubtitleRecording();
+              } else {
+                await _stopSubtitleRecording();
+              }
+            },
+          )),
+          Expanded(child: _controlItem(
+            icon: _showChat ? Icons.chat_rounded : Icons.chat_bubble_outline,
+            label: 'Sohbet',
+            color: _showChat ? AppColors.yellow : Colors.white24,
+            onTap: () => setState(() => _showChat = !_showChat),
+          )),
           Expanded(child: _controlItem(icon: Icons.call_end_rounded, label: 'Kapat', color: AppColors.red, onTap: _hangUp)),
         ],
       ),
@@ -2343,32 +2287,29 @@ class _CallScreenState extends State<CallScreen> {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
-      child: SizedBox(
-        child: Column(
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: color == Colors.white24 ? Colors.white.withOpacity(0.08) : color,
-                shape: BoxShape.circle,
-                boxShadow: color == Colors.white24
-                    ? []
-                    : [BoxShadow(color: color.withOpacity(0.22), blurRadius: 18)],
-              ),
-              child: Icon(icon, color: Colors.white, size: 28),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 62,
+            height: 62,
+            decoration: BoxDecoration(
+              color: color == Colors.white24 ? Colors.white.withOpacity(0.08) : color,
+              shape: BoxShape.circle,
+              boxShadow: color == Colors.white24 ? [] : [BoxShadow(color: color.withOpacity(0.22), blurRadius: 18)],
             ),
-            const SizedBox(height: 8),
-            Text(label, style: const TextStyle(fontSize: 13, color: Colors.white70)),
-          ],
-        ),
+            child: Icon(icon, color: Colors.white, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: Colors.white70)),
+        ],
       ),
     );
   }
 
   Widget _chatPanel() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      width: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.card.withOpacity(0.96),
         borderRadius: BorderRadius.circular(26),
@@ -2376,75 +2317,81 @@ class _CallScreenState extends State<CallScreen> {
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              const Text('Sohbet', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-              const Spacer(),
-              IconButton(
-                onPressed: () => setState(() => _showChat = false),
-                icon: const Icon(Icons.close),
-              ),
-            ],
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 10, 8),
+            child: Row(
+              children: [
+                const Text('Sohbet', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => setState(() => _showChat = false),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 118,
-            child: _messages.isEmpty
-                ? const Center(child: Text('İlk mesajı sen gönder'))
-                : ListView.separated(
-                    reverse: true,
-                    itemCount: _messages.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final item = _messages[_messages.length - 1 - index];
-                      return Align(
-                        alignment: item.isMine ? Alignment.centerRight : Alignment.centerLeft,
-                        child: Container(
-                          constraints: const BoxConstraints(maxWidth: 250),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: item.isMine ? AppColors.purple : Colors.white.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item.text),
-                              if (item.translatedText.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(item.translatedText, style: const TextStyle(color: Colors.white70)),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: _messages.isEmpty
+                  ? const Center(child: Text('İlk mesajı sen gönder'))
+                  : ListView.separated(
+                      reverse: true,
+                      itemCount: _messages.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final item = _messages[_messages.length - 1 - index];
+                        return Align(
+                          alignment: item.isMine ? Alignment.centerRight : Alignment.centerLeft,
+                          child: Container(
+                            constraints: const BoxConstraints(maxWidth: 250),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: item.isMine ? AppColors.purple : Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(item.text),
+                                if (item.translatedText.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(item.translatedText, style: const TextStyle(color: Colors.white70)),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    ),
+            ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _chatController,
-                  decoration: _inputDecoration('Mesaj yaz...', suffixIcon: Icons.translate),
-                ),
-              ),
-              const SizedBox(width: 10),
-              InkWell(
-                onTap: _sendChatMessage,
-                borderRadius: BorderRadius.circular(28),
-                child: Container(
-                  width: 54,
-                  height: 54,
-                  decoration: const BoxDecoration(
-                    color: AppColors.purple,
-                    shape: BoxShape.circle,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _chatController,
+                    decoration: _inputDecoration('Mesaj yaz...', suffixIcon: Icons.translate),
                   ),
-                  child: const Icon(Icons.send_rounded),
                 ),
-              ),
-            ],
+                const SizedBox(width: 10),
+                InkWell(
+                  onTap: _sendChatMessage,
+                  borderRadius: BorderRadius.circular(28),
+                  child: Container(
+                    width: 54,
+                    height: 54,
+                    decoration: const BoxDecoration(
+                      color: AppColors.purple,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.send_rounded),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -2452,7 +2399,7 @@ class _CallScreenState extends State<CallScreen> {
   }
 }
 
-class _TopRoundButton extends StatelessWidget {
+class _TopRoundButtonclass _TopRoundButton extends StatelessWidget {
   final IconData icon;
   final String? label;
   final String? badgeText;
@@ -2474,10 +2421,10 @@ class _TopRoundButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
       ),
       child: badgeText == null
-          ? Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon), if (label != null) ...[const SizedBox(width: 8), Text(label!)]])
+          ? Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 22), if (label != null) ...[const SizedBox(width: 6), Text(label!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))]])
           : Badge(
               label: Text(badgeText!),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon), if (label != null) ...[const SizedBox(width: 8), Text(label!)]]),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 22), if (label != null) ...[const SizedBox(width: 6), Text(label!, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600))]]),
             ),
     );
     if (onTap == null) return child;

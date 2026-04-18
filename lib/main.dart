@@ -576,6 +576,7 @@ class _RecentConversationsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _GlassCard(
       child: Column(
+        mainAxisSize: MainAxisSize.max,
         children: [
           Row(
             children: const [
@@ -1867,11 +1868,11 @@ class _CallScreenState extends State<CallScreen> {
     final bottomInset = media.padding.bottom;
 
     final topBarHeight = 58.0;
-    final videoHeight = size.height * 0.34;
-    final subtitleHeight = size.height * 0.19;
-    final codeHeight = 50.0;
-    final waveHeight = 34.0;
-    final controlsHeight = 118.0;
+    final videoHeight = size.height * 0.36;
+    final subtitleHeight = size.height * 0.21;
+    final codeHeight = 52.0;
+    final waveHeight = 38.0;
+    final controlsHeight = 116.0;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -1897,41 +1898,25 @@ class _CallScreenState extends State<CallScreen> {
                   const SizedBox(height: 14),
                   SizedBox(height: videoHeight, child: _buildRemoteVideoCard(videoHeight, remoteConnected)),
                   const SizedBox(height: 14),
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            children: [
-                              SizedBox(height: subtitleHeight, child: _buildSubtitleCard()),
-                              const SizedBox(height: 12),
-                              SizedBox(height: codeHeight, child: _buildRoomCodeChip()),
-                              const SizedBox(height: 14),
-                              SizedBox(height: waveHeight, child: const _WaveBar()),
-                              const SizedBox(height: 8),
-                              if (!_showChat)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: Text(
-                                    isRecording ? 'Sen konuşuyorsun...' : _cleanStatusText,
-                                    style: const TextStyle(color: Colors.white60, fontSize: 12),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              if (_showChat)
-                                Expanded(child: _chatPanel())
-                              else
-                                const Spacer(),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        _buildReactionRail(),
-                      ],
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: SizedBox(height: subtitleHeight, child: _buildSubtitleCard())),
+                      const SizedBox(width: 12),
+                      _buildReactionRail(),
+                    ],
                   ),
                   const SizedBox(height: 12),
+                  SizedBox(height: codeHeight, child: _buildRoomCodeChip()),
+                  const SizedBox(height: 14),
+                  SizedBox(height: waveHeight, child: const _WaveBar()),
+                  const SizedBox(height: 8),
+                  Text(
+                    isRecording ? 'Sen konuşuyorsun...' : _cleanStatusText,
+                    style: const TextStyle(color: Colors.white60, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                  const Spacer(),
                   SizedBox(height: controlsHeight, child: _buildControlsCard()),
                   SizedBox(height: bottomInset > 0 ? 8 : 14),
                 ],
@@ -1954,6 +1939,23 @@ class _CallScreenState extends State<CallScreen> {
             ),
         ],
       ),
+    );
+  }
+
+  Future<void> _openChatSheet() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return FractionallySizedBox(
+          heightFactor: 0.48,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: _chatPanel(),
+          ),
+        );
+      },
     );
   }
 
@@ -2010,7 +2012,7 @@ class _CallScreenState extends State<CallScreen> {
         _TopRoundButton(
           icon: Icons.chat_bubble_outline,
           badgeText: _messages.isEmpty ? null : '${_messages.length}',
-          onTap: () => setState(() => _showChat = !_showChat),
+          onTap: _openChatSheet,
         ),
         const SizedBox(width: 8),
         _TopRoundButton(
@@ -2270,7 +2272,7 @@ class _CallScreenState extends State<CallScreen> {
             icon: _showChat ? Icons.chat_rounded : Icons.chat_bubble_outline,
             label: 'Sohbet',
             color: _showChat ? AppColors.yellow : Colors.white24,
-            onTap: () => setState(() => _showChat = !_showChat),
+            onTap: _openChatSheet,
           )),
           Expanded(child: _controlItem(icon: Icons.call_end_rounded, label: 'Kapat', color: AppColors.red, onTap: _hangUp)),
         ],

@@ -629,8 +629,7 @@ class _DemoLine extends StatelessWidget {
               children: [
                 TextSpan(text: '$from   ', style: const TextStyle(color: Colors.white70, fontSize: 13)),
                 TextSpan(text: source, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
-                const TextSpan(text: '
-'),
+                const TextSpan(text: '\n'),
                 TextSpan(text: '$to   ', style: const TextStyle(color: Colors.white70, fontSize: 13)),
                 TextSpan(text: target, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
               ],

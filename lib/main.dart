@@ -1864,6 +1864,7 @@ class _CallScreenState extends State<CallScreen> {
     final media = MediaQuery.of(context);
     final size = media.size;
     final isWide = size.width >= 900;
+    final isCompactPhone = size.height < 760;
     final remoteConnected = _remoteRenderer.srcObject != null;
 
     return Scaffold(
@@ -1919,7 +1920,7 @@ class _CallScreenState extends State<CallScreen> {
                   colors: [
                     Colors.black.withOpacity(0.52),
                     Colors.transparent,
-                    Colors.black.withOpacity(0.68),
+                    Colors.black.withOpacity(0.70),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -1932,60 +1933,67 @@ class _CallScreenState extends State<CallScreen> {
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: isWide ? 1000 : 680),
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(isWide ? 24 : 16, 14, isWide ? 24 : 16, 10),
+                  padding: EdgeInsets.fromLTRB(isWide ? 24 : 14, 12, isWide ? 24 : 14, 10),
                   child: Stack(
                     children: [
-                      Column(
-                        children: [
-                          _buildCallTopBar(),
-                          const SizedBox(height: 14),
-                          Expanded(
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                final videoHeight = isWide ? constraints.maxHeight * 0.58 : constraints.maxHeight * 0.42;
-                                return SingleChildScrollView(
-                                  physics: const BouncingScrollPhysics(),
-                                  child: Column(
-                                    children: [
-                                      _buildRemoteVideoCard(videoHeight.clamp(240.0, 460.0), remoteConnected),
-                                      const SizedBox(height: 16),
-                                      Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Expanded(child: _buildSubtitleCard()),
-                                          const SizedBox(width: 12),
-                                          _buildReactionRail(),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 14),
-                                      _buildRoomCodeChip(),
-                                      const SizedBox(height: 18),
-                                      const _WaveBar(),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        isRecording ? 'Sen konuşuyorsun...' : _cleanStatusText,
-                                        style: const TextStyle(color: Colors.white60, fontSize: 13),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      const SizedBox(height: 18),
-                                      _buildControlsCard(),
-                                      if (_showChat) ...[
-                                        const SizedBox(height: 14),
-                                        _chatPanel(),
-                                      ],
-                                      const SizedBox(height: 10),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final reactionWidth = isWide ? 68.0 : 56.0;
+                          final verticalGap = isCompactPhone ? 10.0 : 14.0;
+                          final topBarHeight = isCompactPhone ? 58.0 : 64.0;
+                          final bottomSectionHeight = isCompactPhone ? 148.0 : 176.0;
+                          final chatHeight = _showChat ? (isCompactPhone ? 176.0 : 208.0) : 0.0;
+                          final availableHeight = constraints.maxHeight - topBarHeight - bottomSectionHeight - chatHeight - (verticalGap * (_showChat ? 4 : 3));
+                          final videoHeight = (availableHeight * (isCompactPhone ? 0.53 : 0.58)).clamp(220.0, isWide ? 520.0 : 430.0);
+                          final subtitleHeight = (availableHeight - videoHeight).clamp(120.0, isWide ? 220.0 : 200.0);
+
+                          return Column(
+                            children: [
+                              SizedBox(height: topBarHeight, child: _buildCallTopBar()),
+                              SizedBox(height: verticalGap),
+                              SizedBox(
+                                height: videoHeight,
+                                child: _buildRemoteVideoCard(videoHeight, remoteConnected),
+                              ),
+                              SizedBox(height: verticalGap),
+                              SizedBox(
+                                height: subtitleHeight,
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(child: _buildSubtitleCard()),
+                                    const SizedBox(width: 10),
+                                    SizedBox(width: reactionWidth, child: _buildReactionRail()),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: verticalGap),
+                              _buildRoomCodeChip(),
+                              const SizedBox(height: 12),
+                              const SizedBox(height: 34, child: _WaveBar()),
+                              const SizedBox(height: 6),
+                              Text(
+                                isRecording ? 'Sen konuşuyorsun...' : _cleanStatusText,
+                                style: const TextStyle(color: Colors.white60, fontSize: 13),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: verticalGap),
+                              SizedBox(
+                                height: isCompactPhone ? 118 : 132,
+                                child: _buildControlsCard(),
+                              ),
+                              if (_showChat) ...[
+                                SizedBox(height: verticalGap),
+                                SizedBox(height: isCompactPhone ? 176 : 208, child: _chatPanel()),
+                              ],
+                            ],
+                          );
+                        },
                       ),
                       if (_reactionEmoji != null)
                         Positioned(
                           right: 14,
-                          top: 86,
+                          top: isCompactPhone ? 74 : 86,
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                             decoration: BoxDecoration(
@@ -2219,7 +2227,7 @@ class _CallScreenState extends State<CallScreen> {
         border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           for (final emoji in ['👍', '😍', '😂', '😮', '👏'])
             Padding(
@@ -2240,87 +2248,87 @@ class _CallScreenState extends State<CallScreen> {
   }
 
   Widget _buildRoomCodeChip() {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 10,
-      runSpacing: 8,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.30),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withOpacity(0.06)),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.30),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.group_outlined, size: 16, color: Colors.white70),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Oda Kodu: ${widget.privateCode}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.group_outlined, size: 16, color: Colors.white70),
-              const SizedBox(width: 8),
-              Text('Oda Kodu: ${widget.privateCode}', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-              const SizedBox(width: 10),
-              InkWell(
-                onTap: () async {
-                  await Clipboard.setData(ClipboardData(text: widget.privateCode));
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Oda kodu kopyalandı')),
-                    );
-                  }
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Text('Kopyala', style: TextStyle(color: AppColors.purple, fontWeight: FontWeight.w600)),
-                    SizedBox(width: 6),
-                    Icon(Icons.copy_rounded, size: 16, color: AppColors.purple),
-                  ],
-                ),
-              ),
-            ],
+          const SizedBox(width: 10),
+          InkWell(
+            onTap: () async {
+              await Clipboard.setData(ClipboardData(text: widget.privateCode));
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Oda kodu kopyalandı')),
+                );
+              }
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Text('Kopyala', style: TextStyle(color: AppColors.purple, fontWeight: FontWeight.w600)),
+                SizedBox(width: 6),
+                Icon(Icons.copy_rounded, size: 16, color: AppColors.purple),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildControlsCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.28),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceEvenly,
-        spacing: 10,
-        runSpacing: 14,
+      child: Row(
         children: [
-          _controlItem(icon: micOn ? Icons.mic : Icons.mic_off, label: 'Mikrofon', color: micOn ? AppColors.green : Colors.white24, onTap: _toggleMic),
-          _controlItem(icon: camOn ? Icons.videocam : Icons.videocam_off, label: 'Kamera', color: camOn ? AppColors.blue : Colors.white24, onTap: _toggleCamera),
-          _controlItem(
-            icon: subtitlesOn ? Icons.translate_rounded : Icons.translate_outlined,
-            label: 'Çeviri',
-            color: subtitlesOn ? AppColors.purple : Colors.white24,
-            onTap: () async {
-              setState(() => subtitlesOn = !subtitlesOn);
-              if (subtitlesOn && micOn) {
-                await _startSubtitleRecording();
-              } else {
-                await _stopSubtitleRecording();
-              }
-            },
+          Expanded(child: _controlItem(icon: micOn ? Icons.mic : Icons.mic_off, label: 'Mikrofon', color: micOn ? AppColors.green : Colors.white24, onTap: _toggleMic)),
+          Expanded(child: _controlItem(icon: camOn ? Icons.videocam : Icons.videocam_off, label: 'Kamera', color: camOn ? AppColors.blue : Colors.white24, onTap: _toggleCamera)),
+          Expanded(
+            child: _controlItem(
+              icon: subtitlesOn ? Icons.translate_rounded : Icons.translate_outlined,
+              label: 'Çeviri',
+              color: subtitlesOn ? AppColors.purple : Colors.white24,
+              onTap: () async {
+                setState(() => subtitlesOn = !subtitlesOn);
+                if (subtitlesOn && micOn) {
+                  await _startSubtitleRecording();
+                } else {
+                  await _stopSubtitleRecording();
+                }
+              },
+            ),
           ),
-          _controlItem(
-            icon: _showChat ? Icons.chat_rounded : Icons.chat_bubble_outline,
-            label: 'Sohbet',
-            color: _showChat ? AppColors.yellow : Colors.white24,
-            onTap: () => setState(() => _showChat = !_showChat),
+          Expanded(
+            child: _controlItem(
+              icon: _showChat ? Icons.chat_rounded : Icons.chat_bubble_outline,
+              label: 'Sohbet',
+              color: _showChat ? AppColors.yellow : Colors.white24,
+              onTap: () => setState(() => _showChat = !_showChat),
+            ),
           ),
-          _controlItem(icon: Icons.call_end_rounded, label: 'Kapat', color: AppColors.red, onTap: _hangUp),
+          Expanded(child: _controlItem(icon: Icons.call_end_rounded, label: 'Kapat', color: AppColors.red, onTap: _hangUp)),
         ],
       ),
     );
@@ -2336,7 +2344,6 @@ class _CallScreenState extends State<CallScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: SizedBox(
-        width: 82,
         child: Column(
           children: [
             Container(

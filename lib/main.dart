@@ -1319,9 +1319,9 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   bool _isConnecting = false;
   bool _historySaved = false;
 
-  String liveSubtitleText = 'Konuşma başladığında burada anlık metin görünecek';
+  String partialSubtitleText = '';
   String finalSubtitleText = '';
-  String liveTranslatedText = 'Çeviri burada görünecek';
+  String partialTranslatedText = '';
   String finalTranslatedText = '';
   String statusText = 'Hazırlanıyor...';
   String? myClientId;
@@ -1530,23 +1530,27 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         try {
           final data = jsonDecode(message);
           if (mounted && data['translated'] != null) {
-            final incomingOriginal = (data['original'] ?? '').toString().trim();
-            final incomingTranslated = (data['translated'] ?? '').toString().trim();
+            final stage = (data['stage'] ?? 'partial').toString();
+            final original = (data['original'] ?? '').toString().trim();
+            final translated = (data['translated'] ?? '').toString().trim();
 
             setState(() {
-              if (incomingOriginal.isNotEmpty) {
-                final shouldPromote =
-                    liveSubtitleText.isNotEmpty &&
-                    liveSubtitleText != 'Konuşma başladığında burada anlık metin görünecek' &&
-                    liveSubtitleText != incomingOriginal;
-
-                if (shouldPromote) {
-                  finalSubtitleText = liveSubtitleText;
-                  finalTranslatedText = liveTranslatedText;
+              if (stage == 'final') {
+                if (original.isNotEmpty) {
+                  finalSubtitleText = original;
                 }
-
-                liveSubtitleText = incomingOriginal;
-                liveTranslatedText = incomingTranslated.isEmpty ? liveTranslatedText : incomingTranslated;
+                if (translated.isNotEmpty) {
+                  finalTranslatedText = translated;
+                }
+                partialSubtitleText = '';
+                partialTranslatedText = '';
+              } else {
+                if (original.isNotEmpty) {
+                  partialSubtitleText = original;
+                }
+                if (translated.isNotEmpty) {
+                  partialTranslatedText = translated;
+                }
               }
             });
           }
@@ -1578,7 +1582,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           numChannels: 1,
           sampleRate: 16000,
         );
-        await Future.delayed(const Duration(milliseconds: 1400));
+        await Future.delayed(const Duration(milliseconds: 1900));
         final savedPath = await _recorder.stopRecorder();
         if (savedPath != null) {
           final file = File(savedPath);
@@ -1885,7 +1889,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
 
   String get _displayStatus {
-    if (isRecording) return 'Dinleniyor ve çevriliyor...';
+    if (isRecording) return 'Canlı altyazı hazırlanıyor...';
     final text = statusText.trim();
     if (text.startsWith('Oda oluşturuldu')) return 'Katılımcı bekleniyor';
     if (text.startsWith('Bağlantı:') || text == 'Kamera açıldı') return remoteReadyForUi ? 'Görüşme devam ediyor' : 'Karşı taraf bekleniyor';
@@ -2213,11 +2217,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   Row(
                     children: [
                       Text(
-                        '$sourceLanguageName (Sen) • Anlık',
+                        '$sourceLanguageName (Siz)',
                         style: TextStyle(
-                          color: const Color(0xFFB89BFF),
+                          color: Colors.white.withOpacity(0.78),
                           fontSize: compact ? 12 : 13,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const Spacer(),
@@ -2226,7 +2230,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    liveSubtitleText,
+                    partialSubtitleText.isNotEmpty
+                        ? partialSubtitleText
+                        : (finalSubtitleText.isNotEmpty
+                            ? finalSubtitleText
+                            : 'Konuşma başladığında burada anlık altyazı görünecek'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -2236,14 +2244,14 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                       height: 1.25,
                     ),
                   ),
-                  if (finalSubtitleText.isNotEmpty) ...[
+                  if (finalSubtitleText.isNotEmpty && partialSubtitleText.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(
                       finalSubtitleText,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.58),
+                        color: Colors.white.withOpacity(0.50),
                         fontSize: compact ? 13 : 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -2253,11 +2261,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   Row(
                     children: [
                       Text(
-                        '$targetLanguageName (Karşı taraf) • Kesin',
+                        '$targetLanguageName (Karşı taraf) • Çeviri',
                         style: TextStyle(
-                          color: const Color(0xFF7DB7FF),
+                          color: Colors.white.withOpacity(0.70),
                           fontSize: compact ? 12 : 13,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const Spacer(),
@@ -2266,24 +2274,28 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    liveTranslatedText,
+                    partialTranslatedText.isNotEmpty
+                        ? partialTranslatedText
+                        : (finalTranslatedText.isNotEmpty
+                            ? finalTranslatedText
+                            : 'Çeviri burada görünecek'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.96),
+                      color: Colors.white.withOpacity(0.92),
                       fontSize: compact ? 17 : 18,
                       fontWeight: FontWeight.w600,
                       height: 1.25,
                     ),
                   ),
-                  if (finalTranslatedText.isNotEmpty) ...[
+                  if (finalTranslatedText.isNotEmpty && partialTranslatedText.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(
                       finalTranslatedText,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.52),
+                        color: Colors.white.withOpacity(0.48),
                         fontSize: compact ? 13 : 14,
                         fontWeight: FontWeight.w500,
                       ),

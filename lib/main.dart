@@ -139,14 +139,12 @@ class ProfileData {
   final String about;
   final String preferredSourceLanguage;
   final String preferredTargetLanguage;
-  final bool avatarMode;
 
   const ProfileData({
     this.displayName = '',
     this.about = '',
     this.preferredSourceLanguage = 'Türkçe',
     this.preferredTargetLanguage = 'Rusça',
-    this.avatarMode = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -154,7 +152,6 @@ class ProfileData {
         'about': about,
         'preferredSourceLanguage': preferredSourceLanguage,
         'preferredTargetLanguage': preferredTargetLanguage,
-        'avatarMode': avatarMode,
       };
 
   factory ProfileData.fromJson(Map<String, dynamic> json) => ProfileData(
@@ -162,7 +159,6 @@ class ProfileData {
         about: (json['about'] ?? '').toString(),
         preferredSourceLanguage: (json['preferredSourceLanguage'] ?? 'Türkçe').toString(),
         preferredTargetLanguage: (json['preferredTargetLanguage'] ?? 'Rusça').toString(),
-        avatarMode: json['avatarMode'] == true,
       );
 }
 
@@ -873,7 +869,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _aboutController = TextEditingController();
   String _source = 'Türkçe';
   String _target = 'Rusça';
-  bool _avatarMode = false;
   bool _loading = true;
 
   final List<String> languages = const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce'];
@@ -890,7 +885,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _aboutController.text = profile.about;
     _source = profile.preferredSourceLanguage;
     _target = profile.preferredTargetLanguage;
-    _avatarMode = profile.avatarMode;
     if (mounted) setState(() => _loading = false);
   }
 
@@ -900,7 +894,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       about: _aboutController.text.trim(),
       preferredSourceLanguage: _source,
       preferredTargetLanguage: _target,
-      avatarMode: _avatarMode,
     );
     await AppStore.saveProfile(profile);
     if (mounted) {
@@ -947,14 +940,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   label: 'Tercih edilen hedef dil',
                   items: languages,
                   onChanged: (v) => setState(() => _target = v ?? 'Rusça'),
-                ),
-                const SizedBox(height: 14),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Avatar modu'),
-                  subtitle: const Text('Şimdilik görünüm ayarı olarak saklanır'),
-                  value: _avatarMode,
-                  onChanged: (value) => setState(() => _avatarMode = value),
                 ),
                 const SizedBox(height: 10),
                 FilledButton.icon(
@@ -1157,7 +1142,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
               await Share.share('BridgeCall odama katıl: $roomLink');
             },
             icon: const Icon(Icons.link_rounded),
-            label: const Text('Link paylaş'),
+            label: const Text('Davet Linkini Paylaş'),
           ),
         ],
       ),
@@ -1265,7 +1250,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                       }
                     },
                     icon: const Icon(Icons.info_outline),
-                    label: const Text('Oda adını kopyala'),
+                    label: const Text('Oda Adını Kopyala'),
                   ),
                 ),
               ],
@@ -1319,7 +1304,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   bool _isConnecting = false;
   bool _historySaved = false;
 
-  String subtitleText = 'Canlı altyazı burada görünecek';
+  String subtitleText = 'Konuşma algılandığında burada altyazı görünecek';
   String translatedText = 'Çeviri burada görünecek';
   String statusText = 'Hazırlanıyor...';
   String? myClientId;
@@ -1561,7 +1546,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           numChannels: 1,
           sampleRate: 16000,
         );
-        await Future.delayed(const Duration(seconds: 2));
+        await Future.delayed(const Duration(milliseconds: 2800));
         final savedPath = await _recorder.stopRecorder();
         if (savedPath != null) {
           final file = File(savedPath);

@@ -1847,14 +1847,25 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final bool compact = size.width < 380;
-    final double horizontal = compact ? 12 : 16;
-    final double topInset = MediaQuery.of(context).padding.top;
-    final double previewW = compact ? 96 : 112;
-    final double previewH = compact ? 138 : 160;
+    final media = MediaQuery.of(context);
+    final size = media.size;
+    final bottomInset = media.viewInsets.bottom;
+    final safeTop = media.padding.top;
+    final safeBottom = media.padding.bottom;
+    final bool compact = size.width < 390;
+    final double horizontal = compact ? 14 : 18;
+    final double previewW = compact ? 104 : 116;
+    final double previewH = compact ? 148 : 168;
+    final double controlsBottom = safeBottom + 10;
+    final double controlsPanelHeight = compact ? 114 : 120;
+    final double controlsPanelTop = size.height - controlsPanelHeight - controlsBottom;
+    final double chatBarHeight = 70;
+    final double chatBarBottom = controlsBottom + controlsPanelHeight + 12;
     final bool remoteReady = _remoteRenderer.srcObject != null;
+    final double subtitleBottom = (_showChat ? size.height * 0.44 : chatBarBottom + chatBarHeight + 20).clamp(210.0, size.height * 0.58);
+    final double waveBottom = subtitleBottom - 54;
+    final double statusBottom = waveBottom - 20;
+    final double reactionsTop = (safeTop + 170).clamp(150.0, size.height * 0.40);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -1870,7 +1881,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                 : Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Color(0xFF111827), Color(0xFF261A1A), Color(0xFF070B14)],
+                        colors: [Color(0xFF071125), Color(0xFF171323), Color(0xFF090E18)],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
@@ -1878,21 +1889,32 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     child: Stack(
                       children: [
                         Positioned.fill(
-                          child: Opacity(
-                            opacity: 0.08,
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                gradient: RadialGradient(
-                                  colors: [Color(0xFF8B5CF6), Colors.transparent],
-                                  radius: 0.9,
-                                  center: Alignment(0, 0.2),
-                                ),
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  const Color(0xFF6F3BFF).withOpacity(0.10),
+                                  Colors.transparent,
+                                  const Color(0xFF4F8CFF).withOpacity(0.08),
+                                ],
                               ),
                             ),
                           ),
                         ),
                         const Center(
-                          child: Icon(Icons.person_rounded, size: 160, color: Colors.white24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.videocam_off_rounded, size: 82, color: Colors.white24),
+                              SizedBox(height: 16),
+                              Text(
+                                'Karşı taraf bekleniyor',
+                                style: TextStyle(color: Colors.white54, fontSize: 18, fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -1907,30 +1929,21 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   colors: [
                     Colors.black.withOpacity(0.34),
                     Colors.transparent,
-                    Colors.black.withOpacity(0.58),
+                    Colors.black.withOpacity(0.60),
                   ],
-                  stops: const [0, .35, 1],
+                  stops: const [0, 0.35, 1],
                 ),
               ),
             ),
           ),
           Positioned(
-            top: topInset + 10,
+            top: safeTop + 8,
             left: horizontal,
             right: horizontal,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.26),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
-                  ),
-                  child: const Icon(Icons.shield_outlined, color: Colors.white),
-                ),
+                _TopRoundButton(icon: Icons.shield_outlined),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -1941,7 +1954,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: compact ? 24 : 26,
+                          fontSize: compact ? 24 : 28,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
                         ),
@@ -1949,54 +1962,51 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.circle, color: AppColors.green, size: 9),
-                          const SizedBox(width: 6),
+                          const Icon(Icons.circle, color: AppColors.green, size: 10),
+                          const SizedBox(width: 8),
                           Text(
                             _callDuration,
-                            style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                            style: const TextStyle(color: Colors.white70, fontSize: 13.5, fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 10),
+                _TopRoundButton(icon: Icons.groups_rounded, label: '$memberCount'),
                 const SizedBox(width: 8),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    _TopRoundButton(icon: Icons.groups_rounded, label: '$memberCount'),
-                    _TopRoundButton(
-                      icon: Icons.chat_bubble_outline,
-                      badgeText: _messages.isEmpty ? null : '${_messages.length}',
-                      onTap: () => setState(() => _showChat = !_showChat),
-                    ),
-                    _TopRoundButton(
-                      icon: Icons.more_horiz_rounded,
-                      onTap: () async {
-                        final link = AppStore.inviteLink(widget.roomName, widget.privateCode);
-                        await Share.share('BridgeCall odama katıl: $link');
-                      },
-                    ),
-                  ],
+                _TopRoundButton(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  badgeText: _messages.isEmpty ? null : '${_messages.length}',
+                  onTap: _toggleChatPanel,
+                ),
+                const SizedBox(width: 8),
+                _TopRoundButton(
+                  icon: Icons.ios_share_rounded,
+                  onTap: () async {
+                    final link = AppStore.inviteLink(widget.roomName, widget.privateCode);
+                    await Share.share('BridgeCall odama katıl: $link');
+                  },
                 ),
               ],
             ),
           ),
           Positioned(
-            top: topInset + 74,
+            top: safeTop + 86,
             right: horizontal,
             width: previewW,
             height: previewH,
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: Colors.white.withOpacity(0.14), width: 1.1),
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.15),
                 boxShadow: const [
-                  BoxShadow(color: Color(0x55000000), blurRadius: 18, offset: Offset(0, 10)),
+                  BoxShadow(color: Color(0x66000000), blurRadius: 18, offset: Offset(0, 10)),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(26),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -2013,14 +2023,14 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                             ),
                           ),
                     Positioned(
-                      right: 8,
-                      bottom: 8,
+                      right: 10,
+                      bottom: 10,
                       child: Container(
-                        width: 30,
-                        height: 30,
+                        width: 34,
+                        height: 34,
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.45),
-                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.black.withOpacity(0.46),
+                          shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.cameraswitch_rounded, size: 18, color: Colors.white),
                       ),
@@ -2030,20 +2040,47 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
+          Positioned(
+            right: horizontal,
+            top: reactionsTop,
+            child: Column(
+              children: [
+                for (final emoji in ['👍', '😍', '😂', '😮', '👏'])
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: InkWell(
+                      onTap: () => _sendReaction(emoji),
+                      borderRadius: BorderRadius.circular(18),
+                      child: Container(
+                        width: compact ? 54 : 58,
+                        height: compact ? 54 : 58,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.34),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: Colors.white.withOpacity(0.08)),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(emoji, style: TextStyle(fontSize: compact ? 26 : 28)),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
           if (_reactionEmoji != null)
             Positioned(
-              right: horizontal + 4,
-              top: topInset + previewH + 110,
+              right: horizontal + 6,
+              top: reactionsTop - 74,
               child: AnimatedScale(
-                duration: const Duration(milliseconds: 250),
-                scale: _reactionEmoji == null ? 0.6 : 1,
+                duration: const Duration(milliseconds: 220),
+                scale: 1,
                 child: Container(
                   width: 62,
                   height: 62,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.34),
+                    color: Colors.black.withOpacity(0.42),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    border: Border.all(color: Colors.white.withOpacity(0.10)),
                   ),
                   alignment: Alignment.center,
                   child: Text(_reactionEmoji!, style: const TextStyle(fontSize: 30)),
@@ -2052,18 +2089,18 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             ),
           Positioned(
             left: horizontal,
-            right: horizontal + 72,
-            bottom: _showChat ? 286 + bottomInset : 182,
+            right: horizontal + 82,
+            bottom: subtitleBottom,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 16, vertical: compact ? 12 : 14),
+              padding: EdgeInsets.fromLTRB(compact ? 16 : 18, 14, compact ? 16 : 18, 16),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.42),
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: Colors.white.withOpacity(0.10)),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF8B5CF6).withOpacity(0.15),
-                    blurRadius: 20,
+                    color: const Color(0xFF8B5CF6).withOpacity(0.12),
+                    blurRadius: 22,
                     spreadRadius: 1,
                   ),
                 ],
@@ -2071,57 +2108,45 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        '$sourceLanguageName (Siz)',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.78),
-                          fontSize: compact ? 12 : 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Spacer(),
-                      const Icon(Icons.graphic_eq_rounded, color: AppColors.purple, size: 18),
-                    ],
+                  Text(
+                    '$sourceLanguageName (Siz)',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.72),
+                      fontSize: compact ? 12 : 13,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Text(
                     subtitleText,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: compact ? 17 : 18,
+                      fontSize: compact ? 18 : 20,
                       fontWeight: FontWeight.w700,
-                      height: 1.25,
+                      height: 1.18,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Text(
-                        '$targetLanguageName (Karşı taraf)',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.70),
-                          fontSize: compact ? 12 : 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Spacer(),
-                      const Icon(Icons.graphic_eq_rounded, color: AppColors.purple, size: 18),
-                    ],
+                  const SizedBox(height: 14),
+                  Text(
+                    '$targetLanguageName (Çeviri)',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.66),
+                      fontSize: compact ? 12 : 13,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Text(
                     translatedText,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.92),
-                      fontSize: compact ? 17 : 18,
-                      fontWeight: FontWeight.w600,
-                      height: 1.25,
+                      color: Colors.white.withOpacity(0.96),
+                      fontSize: compact ? 18 : 20,
+                      fontWeight: FontWeight.w700,
+                      height: 1.18,
                     ),
                   ),
                 ],
@@ -2129,9 +2154,9 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             ),
           ),
           Positioned(
-            left: horizontal,
-            right: horizontal + 72,
-            bottom: _showChat ? 242 + bottomInset : 138,
+            left: horizontal + 8,
+            right: horizontal + 88,
+            bottom: waveBottom,
             child: AnimatedBuilder(
               animation: _waveController,
               builder: (context, _) => _WaveBar(animation: _waveController, active: isRecording || subtitlesOn),
@@ -2139,70 +2164,52 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           ),
           Positioned(
             left: horizontal,
-            right: horizontal + 72,
-            bottom: _showChat ? 220 + bottomInset : 116,
+            right: horizontal + 82,
+            bottom: statusBottom,
             child: Text(
               isRecording ? 'Sen konuşuyorsun...' : statusText,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: const Color(0xFFD7C8FF),
-                fontSize: compact ? 13 : 14,
+                fontSize: compact ? 12.5 : 13.5,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
           Positioned(
+            left: horizontal,
             right: horizontal,
-            bottom: _showChat ? 220 + bottomInset : 118,
-            child: Column(
-              children: [
-                for (final emoji in ['👍', '😍', '😂', '😮', '👏'])
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: InkWell(
-                      onTap: () => _sendReaction(emoji),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        width: compact ? 50 : 54,
-                        height: compact ? 50 : 54,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.36),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white.withOpacity(0.08)),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(emoji, style: TextStyle(fontSize: compact ? 24 : 26)),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: _showChat ? 206 + bottomInset : 94,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: compact ? 22 : 34),
+            bottom: controlsBottom,
+            child: Container(
+              height: controlsPanelHeight,
+              padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF080F1D).withOpacity(0.96),
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black54, blurRadius: 24, offset: Offset(0, 8)),
+                ],
+              ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _controlItem(
                     icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
                     label: 'Mikrofon',
-                    color: micOn ? AppColors.green : Colors.white24,
+                    color: micOn ? AppColors.green : const Color(0xFF242A36),
                     onTap: _toggleMic,
                   ),
                   _controlItem(
                     icon: camOn ? Icons.videocam_rounded : Icons.videocam_off_rounded,
                     label: 'Kamera',
-                    color: camOn ? AppColors.blue : Colors.white24,
+                    color: camOn ? AppColors.blue : const Color(0xFF242A36),
                     onTap: _toggleCamera,
                   ),
                   _controlItem(
                     icon: subtitlesOn ? Icons.translate_rounded : Icons.translate_outlined,
                     label: 'Çeviri',
-                    color: subtitlesOn ? AppColors.purple : Colors.white24,
+                    color: subtitlesOn ? AppColors.purple : const Color(0xFF242A36),
                     onTap: () async {
                       setState(() => subtitlesOn = !subtitlesOn);
                       if (subtitlesOn) {
@@ -2215,7 +2222,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   _controlItem(
                     icon: _showChat ? Icons.keyboard_arrow_down_rounded : Icons.chat_bubble_outline_rounded,
                     label: 'Sohbet',
-                    color: _showChat ? AppColors.yellow : Colors.white24,
+                    color: _showChat ? AppColors.yellow : const Color(0xFF242A36),
                     onTap: _toggleChatPanel,
                   ),
                   _controlItem(
@@ -2228,14 +2235,20 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _showChat
-                ? _chatPanel(bottomInset: bottomInset)
-                : _collapsedChatBar(bottomInset: bottomInset),
-          ),
+          if (!_showChat)
+            Positioned(
+              left: horizontal,
+              right: horizontal,
+              bottom: chatBarBottom,
+              child: _collapsedChatBar(bottomInset: bottomInset),
+            ),
+          if (_showChat)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _chatPanel(bottomInset: bottomInset),
+            ),
         ],
       ),
     );
@@ -2259,59 +2272,53 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   }
 
   Widget _collapsedChatBar({double bottomInset = 0}) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset > 0 ? bottomInset + 8 : 10),
-        child: InkWell(
-          onTap: _toggleChatPanel,
+    return InkWell(
+      onTap: _toggleChatPanel,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        height: 74,
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        decoration: BoxDecoration(
+          color: const Color(0xFF08101F).withOpacity(0.96),
           borderRadius: BorderRadius.circular(24),
-          child: Container(
-            height: 74,
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            decoration: BoxDecoration(
-              color: const Color(0xFF08101F).withOpacity(0.96),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.border),
-              boxShadow: const [
-                BoxShadow(color: Colors.black45, blurRadius: 18, offset: Offset(0, -3)),
-              ],
+          border: Border.all(color: AppColors.border),
+          boxShadow: const [
+            BoxShadow(color: Colors.black45, blurRadius: 18, offset: Offset(0, -3)),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white),
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Sohbet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-                      SizedBox(height: 3),
-                      Text('Mesajları görmek için yukarı aç', style: TextStyle(color: Colors.white70, fontSize: 12.5)),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white),
-                ),
-              ],
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Sohbet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                  SizedBox(height: 3),
+                  Text('Mesajları görmek için yukarı aç', style: TextStyle(color: Colors.white70, fontSize: 12.5)),
+                ],
+              ),
             ),
-          ),
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.06),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white),
+            ),
+          ],
         ),
       ),
     );
@@ -2328,7 +2335,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       onTap: onTap,
       borderRadius: BorderRadius.circular(28),
       child: SizedBox(
-        width: 68,
+        width: 62,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

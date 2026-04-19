@@ -2212,8 +2212,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   _controlItem(
                     icon: Icons.chat_bubble_outline_rounded,
                     label: 'Sohbet',
-                    color: Colors.white24,
-                    icon: Icons.chat_bubble_outline_rounded,
+                    color: _showChat ? AppColors.purple : Colors.white24,
                     onTap: () => setState(() => _showChat = !_showChat),
                   ),
                   _controlItem(

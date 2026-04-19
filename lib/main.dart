@@ -1822,6 +1822,17 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     return '$h:$m:$s';
   }
 
+
+  String get _displayStatus {
+    if (isRecording) return 'Sen konuşuyorsun...';
+    final text = statusText.trim();
+    if (text.startsWith('Oda oluşturuldu')) return 'Katılımcı bekleniyor';
+    if (text.startsWith('Bağlantı:') || text == 'Kamera açıldı') return remoteReadyForUi ? 'Görüşme devam ediyor' : 'Karşı taraf bekleniyor';
+    return text;
+  }
+
+  bool get remoteReadyForUi => _remoteRenderer.srcObject != null;
+
   @override
   void dispose() {
     _durationTimer?.cancel();
@@ -1849,9 +1860,9 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     final bool compact = size.width < 380;
     final double horizontal = compact ? 12 : 16;
     final double topInset = MediaQuery.of(context).padding.top;
-    final double previewW = compact ? 126 : 148;
-    final double previewH = compact ? 184 : 214;
-    final bool remoteReady = _remoteRenderer.srcObject != null;
+    final double previewW = compact ? 118 : 136;
+    final double previewH = compact ? 168 : 196;
+    final bool remoteReady = remoteReadyForUi;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -1864,56 +1875,52 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     _remoteRenderer,
                     objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
                   )
-                : cameraStarted
-                    ? RTCVideoView(
-                        _localRenderer,
-                        mirror: true,
-                        objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                      )
-                    : Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Color(0xFF111827), Color(0xFF261A1A), Color(0xFF070B14)],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
+                : Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF111827), Color(0xFF261A1A), Color(0xFF070B14)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Opacity(
+                            opacity: 0.08,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                gradient: RadialGradient(
+                                  colors: [Color(0xFF8B5CF6), Colors.transparent],
+                                  radius: 0.9,
+                                  center: Alignment(0, 0.2),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: Opacity(
-                                opacity: 0.08,
-                                child: Container(
-                                  decoration: const BoxDecoration(
-                                    gradient: RadialGradient(
-                                      colors: [Color(0xFF8B5CF6), Colors.transparent],
-                                      radius: 0.9,
-                                      center: Alignment(0, 0.2),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Align(
-                              alignment: const Alignment(0, -0.08),
-                              child: Opacity(
-                                opacity: 0.16,
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: const [
-                                    Icon(Icons.account_circle_rounded, size: 150, color: Colors.white30),
-                                    SizedBox(height: 8),
-                                    Text(
-                                      'Karşı taraf bekleniyor',
-                                      style: TextStyle(color: Colors.white54, fontSize: 16, fontWeight: FontWeight.w500),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
+                        const Center(
+                          child: Icon(Icons.person_rounded, size: 160, color: Colors.white24),
                         ),
-                      ),
+                        Positioned(
+                          left: horizontal,
+                          bottom: 210,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.34),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.white.withOpacity(0.08)),
+                            ),
+                            child: const Text(
+                              'Karşı taraf',
+                              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
           ),
           Positioned.fill(
             child: DecoratedBox(
@@ -1931,6 +1938,23 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
+          if (remoteReady)
+            Positioned(
+              left: horizontal,
+              top: topInset + 94,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.34),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                ),
+                child: const Text(
+                  'Karşı taraf',
+                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
           Positioned(
             top: topInset + 10,
             left: horizontal,
@@ -2000,8 +2024,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             ),
           ),
           Positioned(
-            top: topInset + 98,
-            right: horizontal + 2,
+            top: topInset + 86,
+            right: horizontal,
             width: previewW,
             height: previewH,
             child: Container(
@@ -2030,6 +2054,21 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                             ),
                           ),
                     Positioned(
+                      left: 8,
+                      bottom: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.40),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Text(
+                          'Sen',
+                          style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                    Positioned(
                       right: 8,
                       bottom: 8,
                       child: Container(
@@ -2050,7 +2089,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           if (_reactionEmoji != null)
             Positioned(
               right: horizontal + 8,
-              top: topInset + previewH + 172,
+              top: topInset + previewH + 150,
               child: AnimatedScale(
                 duration: const Duration(milliseconds: 250),
                 scale: _reactionEmoji == null ? 0.6 : 1,
@@ -2070,7 +2109,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           Positioned(
             left: horizontal,
             right: horizontal + 72,
-            bottom: _showChat ? 266 + bottomInset : 198,
+            bottom: _showChat ? 276 + bottomInset : 206,
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 16, vertical: compact ? 12 : 14),
               decoration: BoxDecoration(
@@ -2148,7 +2187,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           Positioned(
             left: horizontal,
             right: horizontal + 72,
-            bottom: _showChat ? 502 + bottomInset : 448,
+            bottom: _showChat ? 446 + bottomInset : 390,
             child: AnimatedBuilder(
               animation: _waveController,
               builder: (context, _) => _WaveBar(animation: _waveController, active: isRecording || subtitlesOn),
@@ -2157,9 +2196,9 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           Positioned(
             left: horizontal,
             right: horizontal + 72,
-            bottom: _showChat ? 458 + bottomInset : 404,
+            bottom: _showChat ? 408 + bottomInset : 352,
             child: Text(
-              isRecording ? 'Sen konuşuyorsun...' : '',
+              _displayStatus,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: const Color(0xFFD7C8FF),
@@ -2170,7 +2209,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           ),
           Positioned(
             right: horizontal,
-            bottom: _showChat ? 252 + bottomInset : 184,
+            bottom: _showChat ? 246 + bottomInset : 178,
             child: Column(
               children: [
                 for (final emoji in ['👍', '😍', '😂', '😮', '👏'])
@@ -2451,7 +2490,7 @@ class _WaveBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<double> baseHeights = [3, 6, 10, 16, 12, 20, 13, 8, 18, 13, 8, 15, 10, 5]
+    final List<double> baseHeights = [6, 10, 18, 28, 20, 36, 24, 12, 30, 22, 14, 26, 16, 8]
         .map((e) => e.toDouble())
         .toList();
 
@@ -2463,11 +2502,11 @@ class _WaveBar extends StatelessWidget {
           children: List.generate(baseHeights.length, (index) {
             final progress = (animation.value + (index * 0.07)) % 1.0;
             final pulse = progress < 0.5 ? progress * 2 : (1 - progress) * 2;
-            final dynamicHeight = baseHeights[index] + ((active ? 0.58 : 0.18) * (4 + (pulse * 6)));
+            final dynamicHeight = baseHeights[index] + ((active ? 1.0 : 0.35) * (8 + (pulse * 12)));
             return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4.0),
-              width: 4,
-              height: dynamicHeight.clamp(3.0, 24.0),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: 5,
+              height: dynamicHeight.clamp(6.0, 42.0),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
                 gradient: const LinearGradient(
@@ -2477,9 +2516,9 @@ class _WaveBar extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.purple.withOpacity(active ? 0.20 : 0.08),
-                    blurRadius: active ? 7 : 3,
-                    spreadRadius: 0,
+                    color: AppColors.purple.withOpacity(active ? 0.55 : 0.22),
+                    blurRadius: active ? 14 : 8,
+                    spreadRadius: active ? 0.5 : 0,
                   ),
                 ],
               ),

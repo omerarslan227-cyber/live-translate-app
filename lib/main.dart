@@ -1833,6 +1833,7 @@ class _CallScreenState extends State<CallScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           Positioned.fill(
@@ -1890,8 +1891,14 @@ class _CallScreenState extends State<CallScreen> {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(widget.roomName, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                      Text(
+                        widget.roomName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -1918,15 +1925,6 @@ class _CallScreenState extends State<CallScreen> {
                     await Share.share('BridgeCall odama katıl: $link');
                   },
                 ),
-                _TopRoundButton(icon: Icons.groups_rounded, label: '$memberCount'),
-                const SizedBox(width: 10),
-                _TopRoundButton(
-                  icon: Icons.chat_bubble_outline,
-                  badgeText: '3',
-                  onTap: () => setState(() => _showChat = !_showChat),
-                ),
-                const SizedBox(width: 10),
-                const _TopRoundButton(icon: Icons.more_horiz_rounded),
               ],
             ),
           ),
@@ -2040,8 +2038,10 @@ class _CallScreenState extends State<CallScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _controlItem(icon: micOn ? Icons.mic : Icons.mic_off, label: 'Mikrofon', color: micOn ? AppColors.green : Colors.white24, onTap: _toggleMic),
                     _controlItem(icon: camOn ? Icons.videocam : Icons.videocam_off, label: 'Kamera', color: camOn ? AppColors.blue : Colors.white24, onTap: _toggleCamera),
@@ -2061,6 +2061,7 @@ class _CallScreenState extends State<CallScreen> {
                     _controlItem(icon: Icons.emoji_emotions_outlined, label: 'Avatar', color: Colors.white24, onTap: () => setState(() => _showChat = !_showChat)),
                     _controlItem(icon: Icons.call_end, label: 'Kapat', color: AppColors.red, onTap: _hangUp),
                   ],
+                  ),
                 ),
                 if (_showChat) ...[
                   const SizedBox(height: 16),

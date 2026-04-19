@@ -1849,8 +1849,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     final bool compact = size.width < 380;
     final double horizontal = compact ? 12 : 16;
     final double topInset = MediaQuery.of(context).padding.top;
-    final double previewW = compact ? 82 : 96;
-    final double previewH = compact ? 124 : 138;
+    final double previewW = compact ? 118 : 136;
+    final double previewH = compact ? 168 : 196;
     final bool remoteReady = _remoteRenderer.srcObject != null;
 
     return Scaffold(
@@ -1949,13 +1949,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                           const Icon(Icons.circle, color: AppColors.green, size: 9),
                           const SizedBox(width: 6),
                           Text(
-                            _callDuration,
+                            '$_callDuration   Kod: ${widget.privateCode}',
                             style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Kod: ${widget.privateCode}',
-                            style: const TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
@@ -1985,66 +1980,57 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             ),
           ),
           Positioned(
-            top: topInset + 84,
+            top: topInset + 86,
             right: horizontal,
-            child: Row(
-              children: [
-                _miniVideoTile(
-                  label: 'Karşı',
-                  width: previewW,
-                  height: previewH,
-                  child: remoteReady
-                      ? RTCVideoView(
-                          _remoteRenderer,
-                          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                        )
-                      : Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFF111827), Color(0xFF1E1B4B)],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
+            width: previewW,
+            height: previewH,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: Colors.white.withOpacity(0.14), width: 1.1),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x55000000), blurRadius: 18, offset: Offset(0, 10)),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(22),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    cameraStarted
+                        ? RTCVideoView(
+                            _localRenderer,
+                            mirror: true,
+                            objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                          )
+                        : Container(
+                            color: Colors.black38,
+                            child: const Center(
+                              child: Icon(Icons.videocam_off_rounded, color: Colors.white54, size: 28),
                             ),
                           ),
-                          child: const Center(
-                            child: Icon(Icons.person_rounded, color: Colors.white30, size: 28),
-                          ),
+                    Positioned(
+                      right: 8,
+                      bottom: 8,
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.45),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                ),
-                const SizedBox(width: 10),
-                _miniVideoTile(
-                  label: 'Sen',
-                  width: previewW,
-                  height: previewH,
-                  child: cameraStarted
-                      ? RTCVideoView(
-                          _localRenderer,
-                          mirror: true,
-                          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                        )
-                      : Container(
-                          color: Colors.black38,
-                          child: const Center(
-                            child: Icon(Icons.videocam_off_rounded, color: Colors.white54, size: 28),
-                          ),
-                        ),
-                  trailing: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.45),
-                      borderRadius: BorderRadius.circular(9),
+                        child: const Icon(Icons.cameraswitch_rounded, size: 18, color: Colors.white),
+                      ),
                     ),
-                    child: const Icon(Icons.cameraswitch_rounded, size: 16, color: Colors.white),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
           if (_reactionEmoji != null)
             Positioned(
-              right: horizontal + 4,
-              top: topInset + previewH + 110,
+              right: horizontal + 8,
+              top: topInset + previewH + 150,
               child: AnimatedScale(
                 duration: const Duration(milliseconds: 250),
                 scale: _reactionEmoji == null ? 0.6 : 1,
@@ -2064,7 +2050,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           Positioned(
             left: horizontal,
             right: horizontal + 72,
-            bottom: _showChat ? 306 + bottomInset : 244,
+            bottom: _showChat ? 298 + bottomInset : 224,
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 16, vertical: compact ? 12 : 14),
               decoration: BoxDecoration(
@@ -2142,7 +2128,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           Positioned(
             left: horizontal,
             right: horizontal + 72,
-            bottom: _showChat ? 420 + bottomInset : 360,
+            bottom: _showChat ? 414 + bottomInset : 342,
             child: AnimatedBuilder(
               animation: _waveController,
               builder: (context, _) => _WaveBar(animation: _waveController, active: isRecording || subtitlesOn),
@@ -2151,7 +2137,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           Positioned(
             left: horizontal,
             right: horizontal + 72,
-            bottom: _showChat ? 398 + bottomInset : 338,
+            bottom: _showChat ? 378 + bottomInset : 306,
             child: Text(
               isRecording ? 'Sen konuşuyorsun...' : statusText,
               textAlign: TextAlign.center,
@@ -2164,7 +2150,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           ),
           Positioned(
             right: horizontal,
-            top: topInset + previewH + 162,
+            bottom: _showChat ? 246 + bottomInset : 178,
             child: Column(
               children: [
                 for (final emoji in ['👍', '😍', '😂', '😮', '👏'])
@@ -2172,17 +2158,17 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     padding: const EdgeInsets.only(bottom: 10),
                     child: InkWell(
                       onTap: () => _sendReaction(emoji),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(16),
                       child: Container(
-                        width: compact ? 42 : 46,
-                        height: compact ? 42 : 46,
+                        width: compact ? 50 : 54,
+                        height: compact ? 50 : 54,
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.34),
-                          borderRadius: BorderRadius.circular(14),
+                          color: Colors.black.withOpacity(0.36),
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: Colors.white.withOpacity(0.08)),
                         ),
                         alignment: Alignment.center,
-                        child: Text(emoji, style: TextStyle(fontSize: compact ? 20 : 22)),
+                        child: Text(emoji, style: TextStyle(fontSize: compact ? 24 : 26)),
                       ),
                     ),
                   ),
@@ -2192,7 +2178,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           Positioned(
             left: 0,
             right: 0,
-            bottom: _showChat ? 112 + bottomInset : 36,
+            bottom: _showChat ? 74 + bottomInset : 40,
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: compact ? 22 : 34),
               child: Row(
@@ -2224,8 +2210,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     },
                   ),
                   _controlItem(
-                    icon: Icons.chat_bubble_outline_rounded,
-                    label: 'Sohbet',
+                    icon: Icons.emoji_emotions_outlined,
+                    label: 'Avatar',
                     color: Colors.white24,
                     onTap: () => setState(() => _showChat = !_showChat),
                   ),
@@ -2247,58 +2233,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               child: _chatPanel(bottomInset: bottomInset),
             ),
         ],
-      ),
-    );
-  }
-
-
-
-  Widget _miniVideoTile({
-    required String label,
-    required double width,
-    required double height,
-    required Widget child,
-    Widget? trailing,
-  }) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withOpacity(0.14), width: 1.1),
-        boxShadow: const [
-          BoxShadow(color: Color(0x55000000), blurRadius: 18, offset: Offset(0, 10)),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            child,
-            Positioned(
-              left: 8,
-              bottom: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.42),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  label,
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-            if (trailing != null)
-              Positioned(
-                right: 8,
-                bottom: 8,
-                child: trailing,
-              ),
-          ],
-        ),
       ),
     );
   }
@@ -2469,7 +2403,7 @@ class _TopRoundButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final child = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.28),
         borderRadius: BorderRadius.circular(18),

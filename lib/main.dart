@@ -2050,7 +2050,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           Positioned(
             left: horizontal,
             right: horizontal + 72,
-            bottom: _showChat ? 298 + bottomInset : 224,
+            bottom: _showChat ? 276 + bottomInset : 206,
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 16, vertical: compact ? 12 : 14),
               decoration: BoxDecoration(
@@ -2128,7 +2128,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           Positioned(
             left: horizontal,
             right: horizontal + 72,
-            bottom: _showChat ? 414 + bottomInset : 342,
+            bottom: _showChat ? 446 + bottomInset : 390,
             child: AnimatedBuilder(
               animation: _waveController,
               builder: (context, _) => _WaveBar(animation: _waveController, active: isRecording || subtitlesOn),
@@ -2137,7 +2137,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           Positioned(
             left: horizontal,
             right: horizontal + 72,
-            bottom: _showChat ? 378 + bottomInset : 306,
+            bottom: _showChat ? 408 + bottomInset : 352,
             child: Text(
               isRecording ? 'Sen konuşuyorsun...' : statusText,
               textAlign: TextAlign.center,
@@ -2210,9 +2210,10 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     },
                   ),
                   _controlItem(
-                    icon: Icons.emoji_emotions_outlined,
-                    label: 'Avatar',
+                    icon: Icons.chat_bubble_outline_rounded,
+                    label: 'Sohbet',
                     color: Colors.white24,
+                    icon: Icons.chat_bubble_outline_rounded,
                     onTap: () => setState(() => _showChat = !_showChat),
                   ),
                   _controlItem(

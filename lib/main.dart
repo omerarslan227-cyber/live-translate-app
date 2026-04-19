@@ -1324,6 +1324,9 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   String statusText = 'Hazırlanıyor...';
   String? myClientId;
   int memberCount = 1;
+  bool remoteMicOn = true;
+  bool remoteCamOn = true;
+  bool remoteSubtitlesOn = true;
 
   late String sourceLanguageName;
   late String targetLanguageName;
@@ -1387,6 +1390,9 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         statusText = widget.isOwner ? 'Oda hazır, katılımcı bekleniyor' : 'Bağlantı kuruluyor';
       });
     }
+    if (subtitlesOn) {
+      unawaited(_startSubtitleRecording());
+    }
   }
 
   Future<void> _openCamera() async {
@@ -1432,13 +1438,16 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     }
 
     _peerConnection!.onTrack = (event) {
-      if (event.streams.isNotEmpty) {
-        _remoteRenderer.srcObject = event.streams.first;
-        if (mounted) {
-          setState(() {
-            statusText = 'Karşı taraf bağlandı';
-          });
-        }
+      if (event.streams.isEmpty) return;
+      final incoming = event.streams.first;
+      if (_localStream != null && incoming.id == _localStream!.id) {
+        return;
+      }
+      _remoteRenderer.srcObject = incoming;
+      if (mounted) {
+        setState(() {
+          statusText = 'Karşı taraf bağlandı';
+        });
       }
     };
 
@@ -1638,6 +1647,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             statusText = 'Odaya giriş onaylandı';
           });
         }
+        _sendMediaState();
         return;
       case 'join_rejected':
         if (mounted) setState(() => statusText = 'Odaya giriş reddedildi');
@@ -1649,11 +1659,13 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             statusText = 'Yeni bir kullanıcı katıldı';
           });
         }
+        _sendMediaState();
         if (widget.isOwner) {
           await _startCall();
         }
         return;
       case 'member_left':
+        _remoteRenderer.srcObject = null;
         if (mounted) {
           setState(() {
             memberCount = memberCount > 1 ? memberCount - 1 : 1;
@@ -1662,6 +1674,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         }
         return;
       case 'room_closed':
+        _remoteRenderer.srcObject = null;
         if (mounted) {
           setState(() => statusText = 'Oda sahibi çağrıyı kapattı');
         }
@@ -1697,6 +1710,25 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           _reactionTimer?.cancel();
           _reactionTimer = Timer(const Duration(seconds: 2), () {
             if (mounted) setState(() => _reactionEmoji = null);
+          });
+        }
+        return;
+      case 'room_state':
+        if (mounted) {
+          setState(() {
+            memberCount = (data['memberCount'] ?? memberCount) as int;
+            if (memberCount < 2) {
+              _remoteRenderer.srcObject = null;
+            }
+          });
+        }
+        return;
+      case 'media_state':
+        if (mounted) {
+          setState(() {
+            remoteMicOn = data['micOn'] != false;
+            remoteCamOn = data['camOn'] != false;
+            remoteSubtitlesOn = data['subtitlesOn'] != false;
           });
         }
         return;
@@ -1756,6 +1788,16 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     });
   }
 
+  void _sendMediaState() {
+    _sendSignal({
+      'type': 'media_state',
+      'room': widget.roomName,
+      'micOn': micOn,
+      'camOn': camOn,
+      'subtitlesOn': subtitlesOn,
+    });
+  }
+
   Future<void> _toggleMic() async {
     if (_localStream == null) return;
     for (final track in _localStream!.getAudioTracks()) {
@@ -1763,6 +1805,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       micOn = track.enabled;
     }
     if (mounted) setState(() {});
+    _sendMediaState();
   }
 
   Future<void> _toggleCamera() async {
@@ -1772,6 +1815,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       camOn = track.enabled;
     }
     if (mounted) setState(() {});
+    _sendMediaState();
   }
 
   Future<void> _saveHistoryIfNeeded() async {
@@ -2069,16 +2113,38 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     Positioned(
-                      right: 8,
+                      left: 8,
                       bottom: 8,
                       child: Container(
-                        width: 30,
-                        height: 30,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.45),
-                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.black.withOpacity(0.42),
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        child: const Icon(Icons.cameraswitch_rounded, size: 18, color: Colors.white),
+                        child: const Text('Sen', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                    Positioned(
+                      right: 8,
+                      bottom: 8,
+                      child: InkWell(
+                        onTap: () async {
+                          try {
+                            final tracks = _localStream?.getVideoTracks();
+                            if (tracks != null && tracks.isNotEmpty) {
+                              await Helper.switchCamera(tracks.first);
+                            }
+                          } catch (_) {}
+                        },
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.45),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.cameraswitch_rounded, size: 18, color: Colors.white),
+                        ),
                       ),
                     ),
                   ],
@@ -2266,6 +2332,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                       } else {
                         await _stopSubtitleRecording();
                       }
+                      _sendMediaState();
                     },
                   ),
                   _controlItem(

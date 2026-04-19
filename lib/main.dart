@@ -1617,7 +1617,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         if (mounted) {
           setState(() {
             memberCount = data['memberCount'] ?? 1;
-            statusText = 'Oda oluşturuldu. Kod: ${widget.privateCode}';
+            statusText = widget.isOwner ? 'Katılımcı bekleniyor' : 'Bağlantı kuruluyor';
           });
         }
         return;
@@ -2128,7 +2128,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           Positioned(
             left: horizontal,
             right: horizontal + 72,
-            bottom: _showChat ? 446 + bottomInset : 390,
+            bottom: _showChat ? 470 + bottomInset : 415,
             child: AnimatedBuilder(
               animation: _waveController,
               builder: (context, _) => _WaveBar(animation: _waveController, active: isRecording || subtitlesOn),
@@ -2137,9 +2137,9 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           Positioned(
             left: horizontal,
             right: horizontal + 72,
-            bottom: _showChat ? 408 + bottomInset : 352,
+            bottom: _showChat ? 430 + bottomInset : 372,
             child: Text(
-              isRecording ? 'Sen konuşuyorsun...' : statusText,
+              isRecording ? 'Sen konuşuyorsun...' : (statusText.startsWith('Oda oluşturuldu') ? '' : statusText),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: const Color(0xFFD7C8FF),
@@ -2431,7 +2431,7 @@ class _WaveBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<double> baseHeights = [6, 10, 18, 28, 20, 36, 24, 12, 30, 22, 14, 26, 16, 8]
+    final List<double> baseHeights = [4, 8, 14, 22, 16, 28, 18, 10, 24, 17, 11, 20, 13, 6]
         .map((e) => e.toDouble())
         .toList();
 
@@ -2443,11 +2443,11 @@ class _WaveBar extends StatelessWidget {
           children: List.generate(baseHeights.length, (index) {
             final progress = (animation.value + (index * 0.07)) % 1.0;
             final pulse = progress < 0.5 ? progress * 2 : (1 - progress) * 2;
-            final dynamicHeight = baseHeights[index] + ((active ? 1.0 : 0.35) * (8 + (pulse * 12)));
+            final dynamicHeight = baseHeights[index] + ((active ? 0.75 : 0.28) * (6 + (pulse * 8)));
             return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: 5,
-              height: dynamicHeight.clamp(6.0, 42.0),
+              margin: const EdgeInsets.symmetric(horizontal: 3.5),
+              width: 4,
+              height: dynamicHeight.clamp(4.0, 32.0),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
                 gradient: const LinearGradient(
@@ -2457,9 +2457,9 @@ class _WaveBar extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.purple.withOpacity(active ? 0.55 : 0.22),
-                    blurRadius: active ? 14 : 8,
-                    spreadRadius: active ? 0.5 : 0,
+                    color: AppColors.purple.withOpacity(active ? 0.32 : 0.14),
+                    blurRadius: active ? 10 : 5,
+                    spreadRadius: 0,
                   ),
                 ],
               ),

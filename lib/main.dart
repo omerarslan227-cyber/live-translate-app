@@ -1299,7 +1299,7 @@ class CallScreen extends StatefulWidget {
   State<CallScreen> createState() => _CallScreenState();
 }
 
-class _CallScreenState extends State<CallScreen> {
+class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
   final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
@@ -1334,6 +1334,8 @@ class _CallScreenState extends State<CallScreen> {
   String? _reactionEmoji;
   Timer? _reactionTimer;
   Timer? _durationTimer;
+  late final AnimationController _waveController;
+  late final AnimationController _glowController;
 
   final Map<String, String> sourceLanguages = const {
     'Türkçe': 'TR',
@@ -1360,6 +1362,14 @@ class _CallScreenState extends State<CallScreen> {
     super.initState();
     sourceLanguageName = widget.sourceLanguageName;
     targetLanguageName = widget.targetLanguageName;
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..repeat();
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1700),
+    )..repeat(reverse: true);
     _durationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -1816,6 +1826,8 @@ class _CallScreenState extends State<CallScreen> {
   void dispose() {
     _durationTimer?.cancel();
     _reactionTimer?.cancel();
+    _waveController.dispose();
+    _glowController.dispose();
     _saveHistoryIfNeeded();
     _stopSubtitleRecording();
     _signalChannel?.sink.close();
@@ -1832,12 +1844,22 @@ class _CallScreenState extends State<CallScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final bool compact = size.width < 380;
+    final double horizontal = compact ? 12 : 16;
+    final double topInset = MediaQuery.of(context).padding.top;
+    final double previewW = compact ? 96 : 112;
+    final double previewH = compact ? 138 : 160;
+    final bool remoteReady = _remoteRenderer.srcObject != null;
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
           Positioned.fill(
-            child: _remoteRenderer.srcObject != null
+            child: remoteReady
                 ? RTCVideoView(
                     _remoteRenderer,
                     objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
@@ -1845,20 +1867,31 @@ class _CallScreenState extends State<CallScreen> {
                 : Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Color(0xFF131827), Color(0xFF3D2A1E)],
+                        colors: [Color(0xFF111827), Color(0xFF261A1A), Color(0xFF070B14)],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
                     ),
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(Icons.videocam_rounded, size: 80, color: Colors.white24),
-                          SizedBox(height: 8),
-                          Text('Karşı taraf bekleniyor', style: TextStyle(color: Colors.white60)),
-                        ],
-                      ),
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Opacity(
+                            opacity: 0.08,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                gradient: RadialGradient(
+                                  colors: [Color(0xFF8B5CF6), Colors.transparent],
+                                  radius: 0.9,
+                                  center: Alignment(0, 0.2),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Center(
+                          child: Icon(Icons.person_rounded, size: 160, color: Colors.white24),
+                        ),
+                      ],
                     ),
                   ),
           ),
@@ -1866,24 +1899,32 @@ class _CallScreenState extends State<CallScreen> {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.black.withOpacity(0.25), Colors.transparent, Colors.black.withOpacity(0.45)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.34),
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.58),
+                  ],
+                  stops: const [0, .35, 1],
                 ),
               ),
             ),
           ),
           Positioned(
-            left: 18,
-            right: 18,
-            top: 52,
+            top: topInset + 10,
+            left: horizontal,
+            right: horizontal,
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.black.withOpacity(0.26),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white.withOpacity(0.08)),
                   ),
                   child: const Icon(Icons.shield_outlined, color: Colors.white),
                 ),
@@ -1891,188 +1932,225 @@ class _CallScreenState extends State<CallScreen> {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         widget.roomName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: compact ? 24 : 26,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.circle, color: AppColors.green, size: 10),
-                          const SizedBox(width: 8),
-                          Text(_callDuration, style: const TextStyle(color: Colors.white70)),
+                          const Icon(Icons.circle, color: AppColors.green, size: 9),
+                          const SizedBox(width: 6),
+                          Text(
+                            _callDuration,
+                            style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                          ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                _TopRoundButton(icon: Icons.groups_rounded, label: '$memberCount'),
-                const SizedBox(width: 10),
-                _TopRoundButton(
-                  icon: Icons.chat_bubble_outline,
-                  badgeText: _messages.isEmpty ? null : '${_messages.length}',
-                  onTap: () => setState(() => _showChat = !_showChat),
-                ),
-                const SizedBox(width: 10),
-                _TopRoundButton(
-                  icon: Icons.ios_share_rounded,
-                  onTap: () async {
-                    final link = AppStore.inviteLink(widget.roomName, widget.privateCode);
-                    await Share.share('BridgeCall odama katıl: $link');
-                  },
+                const SizedBox(width: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    _TopRoundButton(icon: Icons.groups_rounded, label: '$memberCount'),
+                    _TopRoundButton(
+                      icon: Icons.chat_bubble_outline,
+                      badgeText: _messages.isEmpty ? null : '${_messages.length}',
+                      onTap: () => setState(() => _showChat = !_showChat),
+                    ),
+                    _TopRoundButton(
+                      icon: Icons.more_horiz_rounded,
+                      onTap: () async {
+                        final link = AppStore.inviteLink(widget.roomName, widget.privateCode);
+                        await Share.share('BridgeCall odama katıl: $link');
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
           Positioned(
-            top: 110,
-            right: 18,
-            width: 112,
-            height: 160,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(22),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: cameraStarted
+            top: topInset + 74,
+            right: horizontal,
+            width: previewW,
+            height: previewH,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: Colors.white.withOpacity(0.14), width: 1.1),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x55000000), blurRadius: 18, offset: Offset(0, 10)),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(22),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    cameraStarted
                         ? RTCVideoView(
                             _localRenderer,
                             mirror: true,
                             objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
                           )
-                        : Container(color: Colors.black38),
-                  ),
-                  Positioned(
-                    right: 10,
-                    bottom: 10,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.45),
-                        shape: BoxShape.circle,
+                        : Container(
+                            color: Colors.black38,
+                            child: const Center(
+                              child: Icon(Icons.videocam_off_rounded, color: Colors.white54, size: 28),
+                            ),
+                          ),
+                    Positioned(
+                      right: 8,
+                      bottom: 8,
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.45),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.cameraswitch_rounded, size: 18, color: Colors.white),
                       ),
-                      child: const Icon(Icons.flip_camera_android, size: 18),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
           if (_reactionEmoji != null)
             Positioned(
-              right: 28,
-              top: 300,
+              right: horizontal + 4,
+              top: topInset + previewH + 110,
               child: AnimatedScale(
                 duration: const Duration(milliseconds: 250),
-                scale: _reactionEmoji == null ? 0.5 : 1,
+                scale: _reactionEmoji == null ? 0.6 : 1,
                 child: Container(
-                  padding: const EdgeInsets.all(18),
+                  width: 62,
+                  height: 62,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.45),
-                    borderRadius: BorderRadius.circular(22),
+                    color: Colors.black.withOpacity(0.34),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: Colors.white.withOpacity(0.08)),
                   ),
-                  child: Text(_reactionEmoji!, style: const TextStyle(fontSize: 44)),
+                  alignment: Alignment.center,
+                  child: Text(_reactionEmoji!, style: const TextStyle(fontSize: 30)),
                 ),
               ),
             ),
           Positioned(
-            left: 18,
-            right: 18,
-            bottom: _showChat ? 240 : 124,
+            left: horizontal,
+            right: horizontal + 72,
+            bottom: _showChat ? 286 + bottomInset : 182,
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 16, vertical: compact ? 12 : 14),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.42),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white.withOpacity(0.06)),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: Colors.white.withOpacity(0.10)),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF8B5CF6).withOpacity(0.15),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Expanded(child: Text('$sourceLanguageName (Siz)', style: const TextStyle(color: Colors.white70))),
-                      const Icon(Icons.graphic_eq, color: AppColors.purple),
+                      Text(
+                        '$sourceLanguageName (Siz)',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.78),
+                          fontSize: compact ? 12 : 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      const Icon(Icons.graphic_eq_rounded, color: AppColors.purple, size: 18),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text(subtitleText, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 14),
+                  Text(
+                    subtitleText,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: compact ? 17 : 18,
+                      fontWeight: FontWeight.w700,
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   Row(
                     children: [
-                      Expanded(child: Text('$targetLanguageName (Çeviri)', style: const TextStyle(color: Colors.white70))),
-                      const Icon(Icons.graphic_eq, color: AppColors.purple),
+                      Text(
+                        '$targetLanguageName (Karşı taraf)',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.70),
+                          fontSize: compact ? 12 : 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      const Icon(Icons.graphic_eq_rounded, color: AppColors.purple, size: 18),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text(translatedText, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w500)),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            left: 18,
-            right: 18,
-            bottom: _showChat ? 178 : 88,
-            child: const _WaveBar(),
-          ),
-          Positioned(
-            left: 18,
-            right: 18,
-            bottom: _showChat ? 156 : 66,
-            child: Center(
-              child: Text(
-                isRecording ? 'Sen konuşuyorsun...' : statusText,
-                style: const TextStyle(color: Color(0xFFD7C8FF)),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 12,
-            right: 12,
-            bottom: _showChat ? 0 : 8,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _controlItem(icon: micOn ? Icons.mic : Icons.mic_off, label: 'Mikrofon', color: micOn ? AppColors.green : Colors.white24, onTap: _toggleMic),
-                    _controlItem(icon: camOn ? Icons.videocam : Icons.videocam_off, label: 'Kamera', color: camOn ? AppColors.blue : Colors.white24, onTap: _toggleCamera),
-                    _controlItem(
-                      icon: subtitlesOn ? Icons.translate : Icons.translate_outlined,
-                      label: 'Çeviri',
-                      color: subtitlesOn ? AppColors.purple : Colors.white24,
-                      onTap: () async {
-                        setState(() => subtitlesOn = !subtitlesOn);
-                        if (subtitlesOn) {
-                          await _startSubtitleRecording();
-                        } else {
-                          await _stopSubtitleRecording();
-                        }
-                      },
+                  Text(
+                    translatedText,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.92),
+                      fontSize: compact ? 17 : 18,
+                      fontWeight: FontWeight.w600,
+                      height: 1.25,
                     ),
-                    _controlItem(icon: Icons.emoji_emotions_outlined, label: 'Avatar', color: Colors.white24, onTap: () => setState(() => _showChat = !_showChat)),
-                    _controlItem(icon: Icons.call_end, label: 'Kapat', color: AppColors.red, onTap: _hangUp),
-                  ],
                   ),
-                ),
-                if (_showChat) ...[
-                  const SizedBox(height: 16),
-                  _chatPanel(),
                 ],
-              ],
+              ),
             ),
           ),
           Positioned(
-            right: 20,
-            bottom: _showChat ? 302 : 190,
+            left: horizontal,
+            right: horizontal + 72,
+            bottom: _showChat ? 242 + bottomInset : 138,
+            child: AnimatedBuilder(
+              animation: _waveController,
+              builder: (context, _) => _WaveBar(animation: _waveController, active: isRecording || subtitlesOn),
+            ),
+          ),
+          Positioned(
+            left: horizontal,
+            right: horizontal + 72,
+            bottom: _showChat ? 220 + bottomInset : 116,
+            child: Text(
+              isRecording ? 'Sen konuşuyorsun...' : statusText,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: const Color(0xFFD7C8FF),
+                fontSize: compact ? 13 : 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Positioned(
+            right: horizontal,
+            bottom: _showChat ? 220 + bottomInset : 118,
             child: Column(
               children: [
                 for (final emoji in ['👍', '😍', '😂', '😮', '👏'])
@@ -2080,20 +2158,80 @@ class _CallScreenState extends State<CallScreen> {
                     padding: const EdgeInsets.only(bottom: 10),
                     child: InkWell(
                       onTap: () => _sendReaction(emoji),
+                      borderRadius: BorderRadius.circular(16),
                       child: Container(
-                        width: 56,
-                        height: 56,
+                        width: compact ? 50 : 54,
+                        height: compact ? 50 : 54,
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.4),
-                          borderRadius: BorderRadius.circular(18),
+                          color: Colors.black.withOpacity(0.36),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white.withOpacity(0.08)),
                         ),
-                        child: Center(child: Text(emoji, style: const TextStyle(fontSize: 28))),
+                        alignment: Alignment.center,
+                        child: Text(emoji, style: TextStyle(fontSize: compact ? 24 : 26)),
                       ),
                     ),
                   ),
               ],
             ),
           ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: _showChat ? 206 + bottomInset : 94,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: compact ? 22 : 34),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _controlItem(
+                    icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
+                    label: 'Mikrofon',
+                    color: micOn ? AppColors.green : Colors.white24,
+                    onTap: _toggleMic,
+                  ),
+                  _controlItem(
+                    icon: camOn ? Icons.videocam_rounded : Icons.videocam_off_rounded,
+                    label: 'Kamera',
+                    color: camOn ? AppColors.blue : Colors.white24,
+                    onTap: _toggleCamera,
+                  ),
+                  _controlItem(
+                    icon: subtitlesOn ? Icons.translate_rounded : Icons.translate_outlined,
+                    label: 'Çeviri',
+                    color: subtitlesOn ? AppColors.purple : Colors.white24,
+                    onTap: () async {
+                      setState(() => subtitlesOn = !subtitlesOn);
+                      if (subtitlesOn) {
+                        await _startSubtitleRecording();
+                      } else {
+                        await _stopSubtitleRecording();
+                      }
+                    },
+                  ),
+                  _controlItem(
+                    icon: Icons.emoji_emotions_outlined,
+                    label: 'Avatar',
+                    color: Colors.white24,
+                    onTap: () => setState(() => _showChat = !_showChat),
+                  ),
+                  _controlItem(
+                    icon: Icons.call_end_rounded,
+                    label: 'Kapat',
+                    color: AppColors.red,
+                    onTap: _hangUp,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_showChat)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _chatPanel(bottomInset: bottomInset),
+            ),
         ],
       ),
     );
@@ -2105,59 +2243,90 @@ class _CallScreenState extends State<CallScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final bool isActive = color != Colors.white24;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(28),
       child: SizedBox(
-        width: 72,
+        width: 68,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 62,
-              height: 62,
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              width: 58,
+              height: 58,
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(color: color.withOpacity(0.25), blurRadius: 20),
+                  BoxShadow(
+                    color: color.withOpacity(isActive ? 0.28 : 0.08),
+                    blurRadius: isActive ? 18 : 10,
+                    spreadRadius: isActive ? 1 : 0,
+                  ),
                 ],
               ),
-              child: Icon(icon, color: Colors.white),
+              child: Icon(icon, color: Colors.white, size: 24),
             ),
-            const SizedBox(height: 8),
-            Text(label, style: const TextStyle(fontSize: 13)),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                color: isActive ? Colors.white : Colors.white70,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _chatPanel() {
+  Widget _chatPanel({double bottomInset = 0}) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      padding: EdgeInsets.fromLTRB(16, 14, 16, bottomInset > 0 ? bottomInset + 12 : 18),
       decoration: BoxDecoration(
-        color: AppColors.card.withOpacity(0.96),
-        borderRadius: BorderRadius.circular(26),
+        color: const Color(0xFF08101F).withOpacity(0.98),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
+          Container(
+            width: 48,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.22),
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          const SizedBox(height: 12),
           Row(
             children: [
-              const Text('Sohbet', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+              const Text('Sohbet', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
               const Spacer(),
               IconButton(
                 onPressed: () => setState(() => _showChat = false),
-                icon: const Icon(Icons.close),
+                icon: const Icon(Icons.close_rounded),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 118,
+          const SizedBox(height: 6),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 160),
             child: _messages.isEmpty
-                ? const Center(child: Text('İlk mesajı sen gönder'))
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 28),
+                    child: Center(child: Text('İlk mesajı sen gönder', style: TextStyle(color: Colors.white70))),
+                  )
                 : ListView.separated(
+                    shrinkWrap: true,
                     reverse: true,
                     itemCount: _messages.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
@@ -2166,8 +2335,8 @@ class _CallScreenState extends State<CallScreen> {
                       return Align(
                         alignment: item.isMine ? Alignment.centerRight : Alignment.centerLeft,
                         child: Container(
-                          constraints: const BoxConstraints(maxWidth: 250),
-                          padding: const EdgeInsets.all(12),
+                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           decoration: BoxDecoration(
                             color: item.isMine ? AppColors.purple : Colors.white.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(16),
@@ -2175,10 +2344,10 @@ class _CallScreenState extends State<CallScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(item.text),
+                              Text(item.text, style: const TextStyle(fontSize: 15)),
                               if (item.translatedText.isNotEmpty) ...[
                                 const SizedBox(height: 4),
-                                Text(item.translatedText, style: const TextStyle(color: Colors.white70)),
+                                Text(item.translatedText, style: const TextStyle(color: Colors.white70, fontSize: 14)),
                               ],
                             ],
                           ),
@@ -2193,7 +2362,7 @@ class _CallScreenState extends State<CallScreen> {
               Expanded(
                 child: TextField(
                   controller: _chatController,
-                  decoration: _inputDecoration('Mesaj yaz...', suffixIcon: Icons.translate),
+                  decoration: _inputDecoration('Mesaj yaz...', suffixIcon: Icons.translate_rounded),
                 ),
               ),
               const SizedBox(width: 10),
@@ -2201,13 +2370,13 @@ class _CallScreenState extends State<CallScreen> {
                 onTap: _sendChatMessage,
                 borderRadius: BorderRadius.circular(28),
                 child: Container(
-                  width: 54,
-                  height: 54,
+                  width: 52,
+                  height: 52,
                   decoration: const BoxDecoration(
                     color: AppColors.purple,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.send_rounded),
+                  child: const Icon(Icons.send_rounded, color: Colors.white),
                 ),
               ),
             ],
@@ -2252,42 +2421,52 @@ class _TopRoundButton extends StatelessWidget {
 }
 
 class _WaveBar extends StatelessWidget {
-  const _WaveBar();
+  final Animation<double> animation;
+  final bool active;
+
+  const _WaveBar({
+    required this.animation,
+    required this.active,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final List<double> heights = [
-      10.0,
-      16.0,
-      26.0,
-      40.0,
-      24.0,
-      50.0,
-      28.0,
-      16.0,
-      44.0,
-      30.0,
-      14.0,
-      36.0,
-      18.0,
-      12.0,
-    ];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: heights
-          .map(
-            (h) => Container(
+    final List<double> baseHeights = [6, 10, 18, 28, 20, 36, 24, 12, 30, 22, 14, 26, 16, 8]
+        .map((e) => e.toDouble())
+        .toList();
+
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, _) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(baseHeights.length, (index) {
+            final progress = (animation.value + (index * 0.07)) % 1.0;
+            final pulse = progress < 0.5 ? progress * 2 : (1 - progress) * 2;
+            final dynamicHeight = baseHeights[index] + ((active ? 1.0 : 0.35) * (8 + (pulse * 12)));
+            return Container(
               margin: const EdgeInsets.symmetric(horizontal: 3),
               width: 5,
-              height: h,
+              height: dynamicHeight.clamp(6.0, 42.0),
               decoration: BoxDecoration(
-                color: AppColors.purple,
                 borderRadius: BorderRadius.circular(10),
-                boxShadow: const [BoxShadow(color: AppColors.purple, blurRadius: 10)],
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFB37CFF), Color(0xFF7A3DFF)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.purple.withOpacity(active ? 0.55 : 0.22),
+                    blurRadius: active ? 14 : 8,
+                    spreadRadius: active ? 0.5 : 0,
+                  ),
+                ],
               ),
-            ),
-          )
-          .toList(),
+            );
+          }),
+        );
+      },
     );
   }
 }

@@ -1315,7 +1315,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   bool subtitlesOn = true;
   bool cameraStarted = false;
   bool isRecording = false;
-  bool _showChat = true;
+  bool _showChat = false;
+  late final DraggableScrollableController _chatSheetController;
   bool _isConnecting = false;
   bool _historySaved = false;
 
@@ -1362,6 +1363,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     super.initState();
     sourceLanguageName = widget.sourceLanguageName;
     targetLanguageName = widget.targetLanguageName;
+    _chatSheetController = DraggableScrollableController();
     _waveController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1100),
@@ -1826,6 +1828,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   void dispose() {
     _durationTimer?.cancel();
     _reactionTimer?.cancel();
+    _chatSheetController.dispose();
     _waveController.dispose();
     _glowController.dispose();
     _saveHistoryIfNeeded();
@@ -2210,10 +2213,10 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     },
                   ),
                   _controlItem(
-                    icon: Icons.emoji_emotions_outlined,
-                    label: 'Avatar',
-                    color: Colors.white24,
-                    onTap: () => setState(() => _showChat = !_showChat),
+                    icon: _showChat ? Icons.keyboard_arrow_down_rounded : Icons.chat_bubble_outline_rounded,
+                    label: 'Sohbet',
+                    color: _showChat ? AppColors.yellow : Colors.white24,
+                    onTap: _toggleChatPanel,
                   ),
                   _controlItem(
                     icon: Icons.call_end_rounded,
@@ -2225,14 +2228,91 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
-          if (_showChat)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _chatPanel(bottomInset: bottomInset),
-            ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _showChat
+                ? _chatPanel(bottomInset: bottomInset)
+                : _collapsedChatBar(bottomInset: bottomInset),
+          ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _toggleChatPanel() async {
+    if (!mounted) return;
+    setState(() => _showChat = !_showChat);
+    if (_showChat) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!_chatSheetController.isAttached) return;
+        try {
+          await _chatSheetController.animateTo(
+            0.40,
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeOutCubic,
+          );
+        } catch (_) {}
+      });
+    }
+  }
+
+  Widget _collapsedChatBar({double bottomInset = 0}) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset > 0 ? bottomInset + 8 : 10),
+        child: InkWell(
+          onTap: _toggleChatPanel,
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            height: 74,
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            decoration: BoxDecoration(
+              color: const Color(0xFF08101F).withOpacity(0.96),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppColors.border),
+              boxShadow: const [
+                BoxShadow(color: Colors.black45, blurRadius: 18, offset: Offset(0, -3)),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Sohbet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                      SizedBox(height: 3),
+                      Text('Mesajları görmek için yukarı aç', style: TextStyle(color: Colors.white70, fontSize: 12.5)),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.06),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -2288,100 +2368,136 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   }
 
   Widget _chatPanel({double bottomInset = 0}) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(16, 14, 16, bottomInset > 0 ? bottomInset + 12 : 18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF08101F).withOpacity(0.98),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 48,
-            height: 4,
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.62 + bottomInset,
+      child: DraggableScrollableSheet(
+        controller: _chatSheetController,
+        initialChildSize: 0.40,
+        minChildSize: 0.18,
+        maxChildSize: 0.92,
+        snap: true,
+        snapSizes: const [0.18, 0.40, 0.70, 0.92],
+        builder: (context, scrollController) {
+          return Container(
+            padding: EdgeInsets.fromLTRB(16, 10, 16, bottomInset > 0 ? bottomInset + 12 : 18),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.22),
-              borderRadius: BorderRadius.circular(99),
+              color: const Color(0xFF08101F).withOpacity(0.98),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              border: Border.all(color: AppColors.border),
+              boxShadow: const [
+                BoxShadow(color: Colors.black54, blurRadius: 28, offset: Offset(0, -8)),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Text('Sohbet', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-              const Spacer(),
-              IconButton(
-                onPressed: () => setState(() => _showChat = false),
-                icon: const Icon(Icons.close_rounded),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 160),
-            child: _messages.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 28),
-                    child: Center(child: Text('İlk mesajı sen gönder', style: TextStyle(color: Colors.white70))),
-                  )
-                : ListView.separated(
-                    shrinkWrap: true,
-                    reverse: true,
-                    itemCount: _messages.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final item = _messages[_messages.length - 1 - index];
-                      return Align(
-                        alignment: item.isMine ? Alignment.centerRight : Alignment.centerLeft,
-                        child: Container(
-                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: item.isMine ? AppColors.purple : Colors.white.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item.text, style: const TextStyle(fontSize: 15)),
-                              if (item.translatedText.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(item.translatedText, style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                              ],
-                            ],
-                          ),
+            child: Column(
+              children: [
+                Container(
+                  width: 54,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.24),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Text('Sohbet', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.translate_rounded, size: 14, color: AppColors.purple),
+                          SizedBox(width: 6),
+                          Text('Çeviri', style: TextStyle(fontSize: 12, color: Colors.white70)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: _toggleChatPanel,
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: _messages.isEmpty
+                      ? ListView(
+                          controller: scrollController,
+                          children: const [
+                            SizedBox(height: 36),
+                            Center(child: Text('İlk mesajı sen gönder', style: TextStyle(color: Colors.white70))),
+                          ],
+                        )
+                      : ListView.separated(
+                          controller: scrollController,
+                          reverse: true,
+                          itemCount: _messages.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final item = _messages[_messages.length - 1 - index];
+                            return Align(
+                              alignment: item.isMine ? Alignment.centerRight : Alignment.centerLeft,
+                              child: Container(
+                                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.76),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: item.isMine ? AppColors.purple.withOpacity(0.95) : Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: item.isMine ? Colors.transparent : Colors.white.withOpacity(0.06),
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(item.text, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                                    if (item.translatedText.isNotEmpty) ...[
+                                      const SizedBox(height: 5),
+                                      Text(item.translatedText, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _chatController,
-                  decoration: _inputDecoration('Mesaj yaz...', suffixIcon: Icons.translate_rounded),
                 ),
-              ),
-              const SizedBox(width: 10),
-              InkWell(
-                onTap: _sendChatMessage,
-                borderRadius: BorderRadius.circular(28),
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  decoration: const BoxDecoration(
-                    color: AppColors.purple,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.send_rounded, color: Colors.white),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _chatController,
+                        decoration: _inputDecoration('Mesaj yaz...', suffixIcon: Icons.translate_rounded),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    InkWell(
+                      onTap: _sendChatMessage,
+                      borderRadius: BorderRadius.circular(28),
+                      child: Container(
+                        width: 54,
+                        height: 54,
+                        decoration: const BoxDecoration(
+                          color: AppColors.purple,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.send_rounded, color: Colors.white),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          );
+        },
       ),
     );
   }

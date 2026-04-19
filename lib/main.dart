@@ -139,12 +139,14 @@ class ProfileData {
   final String about;
   final String preferredSourceLanguage;
   final String preferredTargetLanguage;
+  final bool avatarMode;
 
   const ProfileData({
     this.displayName = '',
     this.about = '',
     this.preferredSourceLanguage = 'Türkçe',
     this.preferredTargetLanguage = 'Rusça',
+    this.avatarMode = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -152,6 +154,7 @@ class ProfileData {
         'about': about,
         'preferredSourceLanguage': preferredSourceLanguage,
         'preferredTargetLanguage': preferredTargetLanguage,
+        'avatarMode': avatarMode,
       };
 
   factory ProfileData.fromJson(Map<String, dynamic> json) => ProfileData(
@@ -159,6 +162,7 @@ class ProfileData {
         about: (json['about'] ?? '').toString(),
         preferredSourceLanguage: (json['preferredSourceLanguage'] ?? 'Türkçe').toString(),
         preferredTargetLanguage: (json['preferredTargetLanguage'] ?? 'Rusça').toString(),
+        avatarMode: json['avatarMode'] == true,
       );
 }
 
@@ -869,6 +873,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _aboutController = TextEditingController();
   String _source = 'Türkçe';
   String _target = 'Rusça';
+  bool _avatarMode = false;
   bool _loading = true;
 
   final List<String> languages = const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce'];
@@ -885,6 +890,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _aboutController.text = profile.about;
     _source = profile.preferredSourceLanguage;
     _target = profile.preferredTargetLanguage;
+    _avatarMode = profile.avatarMode;
     if (mounted) setState(() => _loading = false);
   }
 
@@ -894,6 +900,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       about: _aboutController.text.trim(),
       preferredSourceLanguage: _source,
       preferredTargetLanguage: _target,
+      avatarMode: _avatarMode,
     );
     await AppStore.saveProfile(profile);
     if (mounted) {
@@ -940,6 +947,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   label: 'Tercih edilen hedef dil',
                   items: languages,
                   onChanged: (v) => setState(() => _target = v ?? 'Rusça'),
+                ),
+                const SizedBox(height: 14),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Avatar modu'),
+                  subtitle: const Text('Şimdilik görünüm ayarı olarak saklanır'),
+                  value: _avatarMode,
+                  onChanged: (value) => setState(() => _avatarMode = value),
                 ),
                 const SizedBox(height: 10),
                 FilledButton.icon(
@@ -1142,7 +1157,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
               await Share.share('BridgeCall odama katıl: $roomLink');
             },
             icon: const Icon(Icons.link_rounded),
-            label: const Text('Davet Linkini Paylaş'),
+            label: const Text('Link paylaş'),
           ),
         ],
       ),
@@ -1250,7 +1265,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                       }
                     },
                     icon: const Icon(Icons.info_outline),
-                    label: const Text('Oda Adını Kopyala'),
+                    label: const Text('Oda adını kopyala'),
                   ),
                 ),
               ],
@@ -1304,8 +1319,10 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   bool _isConnecting = false;
   bool _historySaved = false;
 
-  String subtitleText = 'Konuşma algılandığında burada altyazı görünecek';
-  String translatedText = 'Çeviri burada görünecek';
+  String liveSubtitleText = 'Konuşma başladığında burada anlık metin görünecek';
+  String finalSubtitleText = '';
+  String liveTranslatedText = 'Çeviri burada görünecek';
+  String finalTranslatedText = '';
   String statusText = 'Hazırlanıyor...';
   String? myClientId;
   int memberCount = 1;
@@ -1513,9 +1530,24 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         try {
           final data = jsonDecode(message);
           if (mounted && data['translated'] != null) {
+            final incomingOriginal = (data['original'] ?? '').toString().trim();
+            final incomingTranslated = (data['translated'] ?? '').toString().trim();
+
             setState(() {
-              subtitleText = data['original']?.toString() ?? subtitleText;
-              translatedText = data['translated']?.toString() ?? translatedText;
+              if (incomingOriginal.isNotEmpty) {
+                final shouldPromote =
+                    liveSubtitleText.isNotEmpty &&
+                    liveSubtitleText != 'Konuşma başladığında burada anlık metin görünecek' &&
+                    liveSubtitleText != incomingOriginal;
+
+                if (shouldPromote) {
+                  finalSubtitleText = liveSubtitleText;
+                  finalTranslatedText = liveTranslatedText;
+                }
+
+                liveSubtitleText = incomingOriginal;
+                liveTranslatedText = incomingTranslated.isEmpty ? liveTranslatedText : incomingTranslated;
+              }
             });
           }
           if (mounted && data['error'] != null) {
@@ -1546,7 +1578,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           numChannels: 1,
           sampleRate: 16000,
         );
-        await Future.delayed(const Duration(milliseconds: 2800));
+        await Future.delayed(const Duration(milliseconds: 1400));
         final savedPath = await _recorder.stopRecorder();
         if (savedPath != null) {
           final file = File(savedPath);
@@ -1853,7 +1885,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
 
   String get _displayStatus {
-    if (isRecording) return 'Sen konuşuyorsun...';
+    if (isRecording) return 'Dinleniyor ve çevriliyor...';
     final text = statusText.trim();
     if (text.startsWith('Oda oluşturuldu')) return 'Katılımcı bekleniyor';
     if (text.startsWith('Bağlantı:') || text == 'Kamera açıldı') return remoteReadyForUi ? 'Görüşme devam ediyor' : 'Karşı taraf bekleniyor';
@@ -2181,11 +2213,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   Row(
                     children: [
                       Text(
-                        '$sourceLanguageName (Siz)',
+                        '$sourceLanguageName (Sen) • Anlık',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.78),
+                          color: const Color(0xFFB89BFF),
                           fontSize: compact ? 12 : 13,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       const Spacer(),
@@ -2194,7 +2226,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    subtitleText,
+                    liveSubtitleText,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -2204,15 +2236,28 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                       height: 1.25,
                     ),
                   ),
+                  if (finalSubtitleText.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      finalSubtitleText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.58),
+                        fontSize: compact ? 13 : 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   Row(
                     children: [
                       Text(
-                        '$targetLanguageName (Karşı taraf)',
+                        '$targetLanguageName (Karşı taraf) • Kesin',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.70),
+                          color: const Color(0xFF7DB7FF),
                           fontSize: compact ? 12 : 13,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       const Spacer(),
@@ -2221,16 +2266,29 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    translatedText,
+                    liveTranslatedText,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.92),
+                      color: Colors.white.withOpacity(0.96),
                       fontSize: compact ? 17 : 18,
                       fontWeight: FontWeight.w600,
                       height: 1.25,
                     ),
                   ),
+                  if (finalTranslatedText.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      finalTranslatedText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.52),
+                        fontSize: compact ? 13 : 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

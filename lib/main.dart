@@ -1323,6 +1323,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   String finalSubtitleText = '';
   String partialTranslatedText = '';
   String finalTranslatedText = '';
+
+  String remotePartialOriginalText = '';
+  String remoteFinalOriginalText = '';
+  String remotePartialTranslatedText = '';
+  String remoteFinalTranslatedText = '';
   String statusText = 'Hazırlanıyor...';
   String? myClientId;
   int memberCount = 1;
@@ -1553,6 +1558,14 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                 }
               }
             });
+
+            if (original.isNotEmpty || translated.isNotEmpty) {
+              _forwardSubtitleUpdate(
+                stage: stage,
+                original: original,
+                translated: translated,
+              );
+            }
           }
           if (mounted && data['error'] != null) {
             setState(() => statusText = 'Çeviri hatası: ${data['error']}');
@@ -1582,7 +1595,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           numChannels: 1,
           sampleRate: 16000,
         );
-        await Future.delayed(const Duration(milliseconds: 1900));
+        await Future.delayed(const Duration(milliseconds: 1800));
         final savedPath = await _recorder.stopRecorder();
         if (savedPath != null) {
           final file = File(savedPath);
@@ -1626,6 +1639,48 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     });
 
     if (mounted) setState(() => statusText = 'Arama isteği gönderildi');
+  }
+
+  void _forwardSubtitleUpdate({
+    required String stage,
+    required String original,
+    required String translated,
+  }) {
+    _sendSignal({
+      'type': 'subtitle_packet',
+      'room': widget.roomName,
+      'stage': stage,
+      'original': original,
+      'translated': translated,
+      'sourceLang': sourceLanguages[sourceLanguageName],
+      'targetLang': targetLanguages[targetLanguageName],
+    });
+  }
+
+  void _applyRemoteSubtitle(Map<String, dynamic> data) {
+    final stage = (data['stage'] ?? 'partial').toString();
+    final original = (data['original'] ?? '').toString().trim();
+    final translated = (data['translated'] ?? '').toString().trim();
+
+    setState(() {
+      if (stage == 'final') {
+        if (original.isNotEmpty) {
+          remoteFinalOriginalText = original;
+        }
+        if (translated.isNotEmpty) {
+          remoteFinalTranslatedText = translated;
+        }
+        remotePartialOriginalText = '';
+        remotePartialTranslatedText = '';
+      } else {
+        if (original.isNotEmpty) {
+          remotePartialOriginalText = original;
+        }
+        if (translated.isNotEmpty) {
+          remotePartialTranslatedText = translated;
+        }
+      }
+    });
   }
 
   Future<void> _handleSignal(dynamic rawMessage) async {
@@ -1751,6 +1806,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             remoteCamOn = data['camOn'] != false;
             remoteSubtitlesOn = data['subtitlesOn'] != false;
           });
+        }
+        return;
+      case 'subtitle_packet':
+        if (mounted) {
+          _applyRemoteSubtitle(data);
         }
         return;
     }
@@ -1889,7 +1949,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
 
   String get _displayStatus {
-    if (isRecording) return 'Canlı altyazı hazırlanıyor...';
+    if (isRecording) return 'Dinleniyor ve altyazı akıyor...';
     final text = statusText.trim();
     if (text.startsWith('Oda oluşturuldu')) return 'Katılımcı bekleniyor';
     if (text.startsWith('Bağlantı:') || text == 'Kamera açıldı') return remoteReadyForUi ? 'Görüşme devam ediyor' : 'Karşı taraf bekleniyor';
@@ -2261,7 +2321,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   Row(
                     children: [
                       Text(
-                        '$targetLanguageName (Karşı taraf) • Çeviri',
+                        '$targetLanguageName • Sana giden çeviri',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.70),
                           fontSize: compact ? 12 : 13,
@@ -2292,6 +2352,100 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     const SizedBox(height: 6),
                     Text(
                       finalTranslatedText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.48),
+                        fontSize: compact ? 13 : 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+                  Divider(color: Colors.white.withOpacity(0.08), height: 1),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Text(
+                        'Karşı taraf • Orijinal',
+                        style: TextStyle(
+                          color: const Color(0xFF7DB7FF),
+                          fontSize: compact ? 12 : 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const Spacer(),
+                      Icon(
+                        remoteMicOn ? Icons.mic : Icons.mic_off,
+                        color: remoteMicOn ? AppColors.blue : Colors.white30,
+                        size: 18,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    remotePartialOriginalText.isNotEmpty
+                        ? remotePartialOriginalText
+                        : (remoteFinalOriginalText.isNotEmpty
+                            ? remoteFinalOriginalText
+                            : 'Karşı taraf konuştuğunda burada orijinal metin akacak'),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.92),
+                      fontSize: compact ? 17 : 18,
+                      fontWeight: FontWeight.w600,
+                      height: 1.25,
+                    ),
+                  ),
+                  if (remoteFinalOriginalText.isNotEmpty && remotePartialOriginalText.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      remoteFinalOriginalText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.48),
+                        fontSize: compact ? 13 : 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Text(
+                        '$sourceLanguageName • Sana gelen çeviri',
+                        style: TextStyle(
+                          color: const Color(0xFFB89BFF),
+                          fontSize: compact ? 12 : 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const Spacer(),
+                      const Icon(Icons.graphic_eq_rounded, color: AppColors.purple, size: 18),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    remotePartialTranslatedText.isNotEmpty
+                        ? remotePartialTranslatedText
+                        : (remoteFinalTranslatedText.isNotEmpty
+                            ? remoteFinalTranslatedText
+                            : 'Karşı tarafın çevirisi burada görünecek'),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: compact ? 17 : 18,
+                      fontWeight: FontWeight.w700,
+                      height: 1.25,
+                    ),
+                  ),
+                  if (remoteFinalTranslatedText.isNotEmpty && remotePartialTranslatedText.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      remoteFinalTranslatedText,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

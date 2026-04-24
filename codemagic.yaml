@@ -39,7 +39,7 @@ workflows:
             <string>CDY9NL37S7</string>
             <key>provisioningProfiles</key>
             <dict>
-              <key>com.omerarslan.livetranslate</key>
+              <key>com.bridgecall.app</key>
               <string>LiveTranslateStore</string>
             </dict>
           </dict>

@@ -40,7 +40,7 @@ workflows:
             <key>provisioningProfiles</key>
             <dict>
               <key>com.bridgecall.app</key>
-              <string>1</string>
+              <string>uygulama2</string>
             </dict>
           </dict>
           </plist>
@@ -57,8 +57,8 @@ workflows:
           ls -R build/ios || true
 
     artifacts:
-      - build/iso/ipa/*.ipa
-      - build/iso/archive/*.xcarchive
+      - /Users/builder/clone/build/ios/ipa/*.ipa
+      - /Users/builder/clone/build/iso/archive/*.xcarchive
 
     publishing:
       app_store_connect:

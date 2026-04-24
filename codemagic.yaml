@@ -57,8 +57,8 @@ workflows:
           ls -R build/ios || true
 
     artifacts:
-      - /Users/builder/clone/build/ios/ipa/*.ipa
-      - /Users/builder/clone/build/ios/archive/*.xcarchive
+      - build/iso/ipa/*.ipa
+      - build/iso/archive/*.xcarchive
 
     publishing:
       app_store_connect:

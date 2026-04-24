@@ -26,7 +26,7 @@ workflows:
 
       - name: Create export options
         script: |
-          cat > /Users/builder/exportOptions.plist <<EOF
+          cat > /Users/builder/export_ptions.plist <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -57,8 +57,8 @@ workflows:
           ls -R build/ios || true
 
     artifacts:
-      - /Users/builder/clone/build/ios/ipa/*.ipa
-      - /Users/builder/clone/build/iso/archive/*.xcarchive
+      - build/ios/ipa/*.ipa
+      - build/ios/archive/*.xcarhive
 
     publishing:
       app_store_connect:

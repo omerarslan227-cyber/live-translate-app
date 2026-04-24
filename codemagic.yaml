@@ -40,7 +40,7 @@ workflows:
             <key>provisioningProfiles</key>
             <dict>
               <key>com.bridgecall.app</key>
-              <string>uygulama2</string>
+              <string>bridge11call</string>
             </dict>
           </dict>
           </plist>

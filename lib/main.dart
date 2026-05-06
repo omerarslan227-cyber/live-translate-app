@@ -876,7 +876,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _avatarMode = false;
   bool _loading = true;
 
-  final List<String> languages = const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce'];
+  final List<String> languages = const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce', 'Gürcüce'];
 
   @override
   void initState() {
@@ -966,6 +966,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 14),
+          const _GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Gizlilik ve güvenlik', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                Text(
+                  'BridgeCall kamera ve mikrofonu yalnızca görüşme için kullanır. Ses çeviri için güvenli sunucuya gönderilir; gizlilik politikası App Store Connect metadata ve uygulama içinde paylaşılmalıdır.',
+                  style: TextStyle(color: Colors.white70, height: 1.35),
+                ),
+                SizedBox(height: 8),
+                SelectableText(
+                  'Privacy Policy: https://bridgecall.tech/privacy',
+                  style: TextStyle(color: AppColors.blue, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -990,7 +1009,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   int selectedCapacity = 2;
   bool showAdvanced = false;
 
-  final List<String> languages = const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce'];
+  final List<String> languages = const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce', 'Gürcüce'];
   final List<int> capacities = const [2, 4, 6, 8];
 
   @override
@@ -1220,14 +1239,14 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                 _LanguageDropdown(
                   value: sourceLanguageName,
                   label: 'Benim konuşma dilim',
-                  items: const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce'],
+                  items: const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce', 'Gürcüce'],
                   onChanged: (value) => setState(() => sourceLanguageName = value ?? 'Türkçe'),
                 ),
                 const SizedBox(height: 14),
                 _LanguageDropdown(
                   value: targetLanguageName,
                   label: 'Dinlemek istediğim dil',
-                  items: const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce'],
+                  items: const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce', 'Gürcüce'],
                   onChanged: (value) => setState(() => targetLanguageName = value ?? 'Rusça'),
                 ),
                 const SizedBox(height: 18),
@@ -1352,6 +1371,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     'Rusça': 'RU',
     'Ukraynaca': 'UK',
     'İngilizce': 'EN',
+    'Gürcüce': 'KA',
   };
 
   final Map<String, String> targetLanguages = const {
@@ -1359,6 +1379,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     'Rusça': 'RU',
     'Ukraynaca': 'UK',
     'İngilizce': 'EN-US',
+    'Gürcüce': 'KA',
   };
 
   final Map<String, dynamic> _iceConfig = const {
@@ -1595,7 +1616,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           numChannels: 1,
           sampleRate: 16000,
         );
-        await Future.delayed(const Duration(milliseconds: 1800));
+        await Future.delayed(const Duration(milliseconds: 1300));
         final savedPath = await _recorder.stopRecorder();
         if (savedPath != null) {
           final file = File(savedPath);

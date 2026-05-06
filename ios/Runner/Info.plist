@@ -2,11 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>NSCameraUsageDescription</key>
-    <string>Kamera gerekli</string>
-
-    <key>NSMicrophoneUsageDescription</key>
-    <string>Mikrofon gerekli</string>
+	<key>NSCameraUsageDescription</key>
+	<string>BridgeCall görüntülü konuşma sırasında kameranı kullanır. Kamera yalnızca arama içindeyken açılır.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>BridgeCall konuşmanı algılayıp canlı altyazı ve çeviri oluşturmak için mikrofonunu kullanır.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -71,5 +70,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>BridgeCall kablosuz kulaklık ve Bluetooth ses cihazlarıyla görüşme yapabilmen için Bluetooth erişimi isteyebilir.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>BridgeCall WebRTC bağlantısı ve yerel ağ testleri için ağdaki cihazları bulmak isteyebilir.</string>
 </dict>
 </plist>

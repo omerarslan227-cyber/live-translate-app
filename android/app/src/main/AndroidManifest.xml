@@ -10,7 +10,8 @@
     <application
         android:label="BridgeCall"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="false">
 
         <!-- 🔥 BURAYA GELECEK -->
         <uses-library android:name="org.webrtc" android:required="false"/>

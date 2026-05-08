@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -62,7 +63,8 @@ class AppStore {
   static const _messagesKey = 'message_history_v1';
   static const _profileKey = 'profile_v1';
 
-  static Future<SharedPreferences> get _prefs async => SharedPreferences.getInstance();
+  static Future<SharedPreferences> get _prefs async =>
+      SharedPreferences.getInstance();
 
   static Future<ProfileData> loadProfile() async {
     final prefs = await _prefs;
@@ -97,10 +99,12 @@ class AppStore {
   static Future<void> addHistory(CallHistoryEntry entry) async {
     final prefs = await _prefs;
     final items = await loadHistory();
-    items.removeWhere((e) =>
-        e.roomName == entry.roomName &&
-        e.privateCode == entry.privateCode &&
-        e.timestamp.difference(entry.timestamp).inMinutes.abs() < 2);
+    items.removeWhere(
+      (e) =>
+          e.roomName == entry.roomName &&
+          e.privateCode == entry.privateCode &&
+          e.timestamp.difference(entry.timestamp).inMinutes.abs() < 2,
+    );
     items.insert(0, entry);
     final trimmed = items.take(25).map((e) => jsonEncode(e.toJson())).toList();
     await prefs.setStringList(_historyKey, trimmed);
@@ -150,20 +154,22 @@ class ProfileData {
   });
 
   Map<String, dynamic> toJson() => {
-        'displayName': displayName,
-        'about': about,
-        'preferredSourceLanguage': preferredSourceLanguage,
-        'preferredTargetLanguage': preferredTargetLanguage,
-        'avatarMode': avatarMode,
-      };
+    'displayName': displayName,
+    'about': about,
+    'preferredSourceLanguage': preferredSourceLanguage,
+    'preferredTargetLanguage': preferredTargetLanguage,
+    'avatarMode': avatarMode,
+  };
 
   factory ProfileData.fromJson(Map<String, dynamic> json) => ProfileData(
-        displayName: (json['displayName'] ?? '').toString(),
-        about: (json['about'] ?? '').toString(),
-        preferredSourceLanguage: (json['preferredSourceLanguage'] ?? 'Türkçe').toString(),
-        preferredTargetLanguage: (json['preferredTargetLanguage'] ?? 'Rusça').toString(),
-        avatarMode: json['avatarMode'] == true,
-      );
+    displayName: (json['displayName'] ?? '').toString(),
+    about: (json['about'] ?? '').toString(),
+    preferredSourceLanguage: (json['preferredSourceLanguage'] ?? 'Türkçe')
+        .toString(),
+    preferredTargetLanguage: (json['preferredTargetLanguage'] ?? 'Rusça')
+        .toString(),
+    avatarMode: json['avatarMode'] == true,
+  );
 }
 
 class CallHistoryEntry {
@@ -203,23 +209,26 @@ class CallHistoryEntry {
   }
 
   Map<String, dynamic> toJson() => {
-        'roomName': roomName,
-        'privateCode': privateCode,
-        'sourceLanguage': sourceLanguage,
-        'targetLanguage': targetLanguage,
-        'memberCount': memberCount,
-        'durationSeconds': durationSeconds,
-        'timestamp': timestamp.toIso8601String(),
-      };
+    'roomName': roomName,
+    'privateCode': privateCode,
+    'sourceLanguage': sourceLanguage,
+    'targetLanguage': targetLanguage,
+    'memberCount': memberCount,
+    'durationSeconds': durationSeconds,
+    'timestamp': timestamp.toIso8601String(),
+  };
 
-  factory CallHistoryEntry.fromJson(Map<String, dynamic> json) => CallHistoryEntry(
+  factory CallHistoryEntry.fromJson(Map<String, dynamic> json) =>
+      CallHistoryEntry(
         roomName: (json['roomName'] ?? '').toString(),
         privateCode: (json['privateCode'] ?? '').toString(),
         sourceLanguage: (json['sourceLanguage'] ?? 'Türkçe').toString(),
         targetLanguage: (json['targetLanguage'] ?? 'Rusça').toString(),
         memberCount: (json['memberCount'] ?? 1) as int,
         durationSeconds: (json['durationSeconds'] ?? 0) as int,
-        timestamp: DateTime.tryParse((json['timestamp'] ?? '').toString()) ?? DateTime.now(),
+        timestamp:
+            DateTime.tryParse((json['timestamp'] ?? '').toString()) ??
+            DateTime.now(),
       );
 }
 
@@ -239,20 +248,22 @@ class StoredMessage {
   });
 
   Map<String, dynamic> toJson() => {
-        'roomName': roomName,
-        'text': text,
-        'translatedText': translatedText,
-        'isMine': isMine,
-        'timestamp': timestamp.toIso8601String(),
-      };
+    'roomName': roomName,
+    'text': text,
+    'translatedText': translatedText,
+    'isMine': isMine,
+    'timestamp': timestamp.toIso8601String(),
+  };
 
   factory StoredMessage.fromJson(Map<String, dynamic> json) => StoredMessage(
-        roomName: (json['roomName'] ?? '').toString(),
-        text: (json['text'] ?? '').toString(),
-        translatedText: (json['translatedText'] ?? '').toString(),
-        isMine: json['isMine'] == true,
-        timestamp: DateTime.tryParse((json['timestamp'] ?? '').toString()) ?? DateTime.now(),
-      );
+    roomName: (json['roomName'] ?? '').toString(),
+    text: (json['text'] ?? '').toString(),
+    translatedText: (json['translatedText'] ?? '').toString(),
+    isMine: json['isMine'] == true,
+    timestamp:
+        DateTime.tryParse((json['timestamp'] ?? '').toString()) ??
+        DateTime.now(),
+  );
 }
 
 class HomeShell extends StatefulWidget {
@@ -329,7 +340,11 @@ class HomeScreen extends StatelessWidget {
             return Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF050816), Color(0xFF071327), Color(0xFF0A1021)],
+                  colors: [
+                    Color(0xFF050816),
+                    Color(0xFF071327),
+                    Color(0xFF0A1021),
+                  ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
@@ -340,11 +355,18 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: const [
-                        Icon(Icons.call_rounded, color: AppColors.purple, size: 30),
+                        Icon(
+                          Icons.call_rounded,
+                          color: AppColors.purple,
+                          size: 30,
+                        ),
                         SizedBox(width: 10),
                         Text(
                           'BridgeCall',
-                          style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         Spacer(),
                         Icon(Icons.settings_outlined, color: Colors.white70),
@@ -363,7 +385,10 @@ class HomeScreen extends StatelessWidget {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => CreateRoomScreen(profile: data.profile)),
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                CreateRoomScreen(profile: data.profile),
+                          ),
                         );
                       },
                     ),
@@ -376,7 +401,10 @@ class HomeScreen extends StatelessWidget {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => JoinRoomScreen(profile: data.profile)),
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                JoinRoomScreen(profile: data.profile),
+                          ),
                         );
                       },
                     ),
@@ -434,12 +462,17 @@ class _StatusStrip extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              profileName.isEmpty ? 'BridgeCall’a hoş geldin' : 'Hoş geldin, $profileName',
+              profileName.isEmpty
+                  ? 'BridgeCall’a hoş geldin'
+                  : 'Hoş geldin, $profileName',
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
           const SizedBox(width: 10),
-          const Text('🔥 Popüler: Türkçe ↔ Rusça', style: TextStyle(color: Colors.white70)),
+          const Text(
+            '🔥 Popüler: Türkçe ↔ Rusça',
+            style: TextStyle(color: Colors.white70),
+          ),
         ],
       ),
     );
@@ -464,7 +497,10 @@ class _LastRoomCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   lastHistory?.roomName ?? 'Henüz oda yok',
-                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -480,7 +516,9 @@ class _LastRoomCard extends StatelessWidget {
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.purple,
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
             ),
             onPressed: lastHistory == null
                 ? null
@@ -516,16 +554,29 @@ class _DemoCard extends StatelessWidget {
             children: [
               Text(
                 'Canlı Çeviri Denemesi',
-                style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.purple),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.purple,
+                ),
               ),
               Spacer(),
               Text('● Canlı', style: TextStyle(color: AppColors.green)),
             ],
           ),
           SizedBox(height: 14),
-          _DemoLine(from: 'EN', to: 'TR', source: 'Hello, how are you?', target: 'Merhaba, nasılsın?'),
+          _DemoLine(
+            from: 'EN',
+            to: 'TR',
+            source: 'Hello, how are you?',
+            target: 'Merhaba, nasılsın?',
+          ),
           SizedBox(height: 12),
-          _DemoLine(from: 'EN', to: 'TR', source: 'Where are you from?', target: 'Nerelisin?'),
+          _DemoLine(
+            from: 'EN',
+            to: 'TR',
+            source: 'Where are you from?',
+            target: 'Nerelisin?',
+          ),
         ],
       ),
     );
@@ -556,7 +607,13 @@ class _DemoLine extends StatelessWidget {
             children: [
               Text('$from   $source', style: const TextStyle(fontSize: 15)),
               const SizedBox(height: 6),
-              Text('$to   $target', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+              Text(
+                '$to   $target',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
         ),
@@ -579,7 +636,10 @@ class _RecentConversationsCard extends StatelessWidget {
         children: [
           Row(
             children: const [
-              Text('Son Konuşmalar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Text(
+                'Son Konuşmalar',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
               Spacer(),
             ],
           ),
@@ -587,13 +647,20 @@ class _RecentConversationsCard extends StatelessWidget {
           if (history.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
-              child: Text('Henüz gerçek konuşma kaydı yok. İlk odayı başlatınca burada görünecek.', style: TextStyle(color: Colors.white70)),
+              child: Text(
+                'Henüz gerçek konuşma kaydı yok. İlk odayı başlatınca burada görünecek.',
+                style: TextStyle(color: Colors.white70),
+              ),
             )
           else
-            ...history.take(3).map((entry) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _ConversationTile(entry: entry),
-                )),
+            ...history
+                .take(3)
+                .map(
+                  (entry) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _ConversationTile(entry: entry),
+                  ),
+                ),
         ],
       ),
     );
@@ -609,27 +676,45 @@ class _ConversationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const CircleAvatar(radius: 24, backgroundColor: Colors.white10, child: Icon(Icons.person)),
+        const CircleAvatar(
+          radius: 24,
+          backgroundColor: Colors.white10,
+          child: Icon(Icons.person),
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(entry.roomName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+              Text(
+                entry.roomName,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                ),
+              ),
               const SizedBox(height: 3),
-              Text('${entry.sourceLanguage} ↔ ${entry.targetLanguage} • ${entry.durationLabel}', style: const TextStyle(color: Colors.white70)),
+              Text(
+                '${entry.sourceLanguage} ↔ ${entry.targetLanguage} • ${entry.durationLabel}',
+                style: const TextStyle(color: Colors.white70),
+              ),
             ],
           ),
         ),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(entry.relativeLabel, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+            Text(
+              entry.relativeLabel,
+              style: const TextStyle(color: Colors.white54, fontSize: 12),
+            ),
             const SizedBox(height: 8),
             OutlinedButton(
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.purple),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               onPressed: () {
                 Navigator.push(
@@ -676,13 +761,26 @@ class _InviteCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Arkadaşını Davet Et', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                    Text(
+                      'Arkadaşını Davet Et',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     SizedBox(height: 8),
-                    Text('Davet linkini paylaş, birlikte konuşun!', style: TextStyle(color: Colors.white70)),
+                    Text(
+                      'Davet linkini paylaş, birlikte konuşun!',
+                      style: TextStyle(color: Colors.white70),
+                    ),
                   ],
                 ),
               ),
-              Icon(Icons.card_giftcard_rounded, size: 38, color: Color(0xFFFF6B6B)),
+              Icon(
+                Icons.card_giftcard_rounded,
+                size: 38,
+                color: Color(0xFFFF6B6B),
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -690,15 +788,24 @@ class _InviteCard extends StatelessWidget {
             children: [
               Expanded(
                 child: FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.purple),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.purple,
+                  ),
                   onPressed: () async {
                     if (lastHistory == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Önce bir oda oluştur veya bir odaya katıl.')),
+                        const SnackBar(
+                          content: Text(
+                            'Önce bir oda oluştur veya bir odaya katıl.',
+                          ),
+                        ),
                       );
                       return;
                     }
-                    final link = AppStore.inviteLink(lastHistory!.roomName, lastHistory!.privateCode);
+                    final link = AppStore.inviteLink(
+                      lastHistory!.roomName,
+                      lastHistory!.privateCode,
+                    );
                     await Share.share('BridgeCall odama katıl: $link');
                   },
                   icon: const Icon(Icons.ios_share_rounded),
@@ -715,14 +822,21 @@ class _InviteCard extends StatelessWidget {
                   onPressed: () async {
                     if (lastHistory == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Kopyalanacak aktif oda bulunamadı.')),
+                        const SnackBar(
+                          content: Text('Kopyalanacak aktif oda bulunamadı.'),
+                        ),
                       );
                       return;
                     }
-                    final link = AppStore.inviteLink(lastHistory!.roomName, lastHistory!.privateCode);
+                    final link = AppStore.inviteLink(
+                      lastHistory!.roomName,
+                      lastHistory!.privateCode,
+                    );
                     await Clipboard.setData(ClipboardData(text: link));
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Davet linki kopyalandı')));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Davet linki kopyalandı')),
+                      );
                     }
                   },
                   icon: const Icon(Icons.link_rounded),
@@ -750,7 +864,10 @@ class MessagesScreen extends StatelessWidget {
           builder: (context, snapshot) {
             final messages = snapshot.data ?? const <StoredMessage>[];
             return Scaffold(
-              appBar: AppBar(backgroundColor: Colors.transparent, title: const Text('Mesajlar')),
+              appBar: AppBar(
+                backgroundColor: Colors.transparent,
+                title: const Text('Mesajlar'),
+              ),
               body: messages.isEmpty
                   ? const Center(child: Text('Henüz kayıtlı mesaj yok'))
                   : ListView.separated(
@@ -766,16 +883,30 @@ class MessagesScreen extends StatelessWidget {
                               Row(
                                 children: [
                                   Expanded(
-                                    child: Text(item.roomName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                                    child: Text(
+                                      item.roomName,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                      ),
+                                    ),
                                   ),
-                                  Text(item.isMine ? 'Ben' : 'Karşı', style: const TextStyle(color: Colors.white60)),
+                                  Text(
+                                    item.isMine ? 'Ben' : 'Karşı',
+                                    style: const TextStyle(
+                                      color: Colors.white60,
+                                    ),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 10),
                               Text(item.text),
                               if (item.translatedText.isNotEmpty) ...[
                                 const SizedBox(height: 6),
-                                Text(item.translatedText, style: const TextStyle(color: Colors.white70)),
+                                Text(
+                                  item.translatedText,
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
                               ],
                             ],
                           ),
@@ -803,7 +934,10 @@ class HistoryScreen extends StatelessWidget {
           builder: (context, snapshot) {
             final history = snapshot.data ?? const <CallHistoryEntry>[];
             return Scaffold(
-              appBar: AppBar(backgroundColor: Colors.transparent, title: const Text('Geçmiş')),
+              appBar: AppBar(
+                backgroundColor: Colors.transparent,
+                title: const Text('Geçmiş'),
+              ),
               body: history.isEmpty
                   ? const Center(child: Text('Henüz geçmiş yok'))
                   : ListView.separated(
@@ -819,20 +953,40 @@ class HistoryScreen extends StatelessWidget {
                               Row(
                                 children: [
                                   Expanded(
-                                    child: Text(item.roomName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                                    child: Text(
+                                      item.roomName,
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
-                                  Text(item.relativeLabel, style: const TextStyle(color: Colors.white60)),
+                                  Text(
+                                    item.relativeLabel,
+                                    style: const TextStyle(
+                                      color: Colors.white60,
+                                    ),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              Text('${item.sourceLanguage} ↔ ${item.targetLanguage}'),
+                              Text(
+                                '${item.sourceLanguage} ↔ ${item.targetLanguage}',
+                              ),
                               const SizedBox(height: 6),
-                              Text('Süre: ${item.durationLabel} • Katılımcı: ${item.memberCount} • Kod: ${item.privateCode}', style: const TextStyle(color: Colors.white70)),
+                              Text(
+                                'Süre: ${item.durationLabel} • Katılımcı: ${item.memberCount} • Kod: ${item.privateCode}',
+                                style: const TextStyle(color: Colors.white70),
+                              ),
                               const SizedBox(height: 10),
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: OutlinedButton.icon(
-                                  style: OutlinedButton.styleFrom(side: const BorderSide(color: AppColors.purple)),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(
+                                      color: AppColors.purple,
+                                    ),
+                                  ),
                                   onPressed: () {
                                     Navigator.push(
                                       context,
@@ -876,7 +1030,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _avatarMode = false;
   bool _loading = true;
 
-  final List<String> languages = const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce', 'Gürcüce'];
+  final List<String> languages = const [
+    'Türkçe',
+    'Rusça',
+    'Ukraynaca',
+    'İngilizce',
+    'Gürcüce',
+  ];
 
   @override
   void initState() {
@@ -904,7 +1064,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
     await AppStore.saveProfile(profile);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profil kaydedildi')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profil kaydedildi')));
     }
   }
 
@@ -921,7 +1083,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.transparent, title: const Text('Profil')),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: const Text('Profil'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(18),
         children: [
@@ -929,11 +1094,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Profil Bilgileri', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Profil Bilgileri',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 16),
                 _AppTextField(controller: _nameController, label: 'Görünen ad'),
                 const SizedBox(height: 14),
-                _AppTextField(controller: _aboutController, label: 'Hakkında', hint: 'Kısa bir açıklama yaz'),
+                _AppTextField(
+                  controller: _aboutController,
+                  label: 'Hakkında',
+                  hint: 'Kısa bir açıklama yaz',
+                ),
                 const SizedBox(height: 14),
                 _LanguageDropdown(
                   value: _source,
@@ -952,13 +1124,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Avatar modu'),
-                  subtitle: const Text('Şimdilik görünüm ayarı olarak saklanır'),
+                  subtitle: const Text(
+                    'Şimdilik görünüm ayarı olarak saklanır',
+                  ),
                   value: _avatarMode,
                   onChanged: (value) => setState(() => _avatarMode = value),
                 ),
                 const SizedBox(height: 10),
                 FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.purple, minimumSize: const Size.fromHeight(54)),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.purple,
+                    minimumSize: const Size.fromHeight(54),
+                  ),
                   onPressed: _save,
                   icon: const Icon(Icons.save),
                   label: const Text('Profili Kaydet'),
@@ -971,7 +1148,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Gizlilik ve güvenlik', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(
+                  'Gizlilik ve güvenlik',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
                 SizedBox(height: 8),
                 Text(
                   'BridgeCall kamera ve mikrofonu yalnızca görüşme için kullanır. Ses çeviri için güvenli sunucuya gönderilir; gizlilik politikası App Store Connect metadata ve uygulama içinde paylaşılmalıdır.',
@@ -980,7 +1160,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SizedBox(height: 8),
                 SelectableText(
                   'Privacy Policy: https://bridgecall.tech/privacy',
-                  style: TextStyle(color: AppColors.blue, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: AppColors.blue,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -1001,7 +1184,9 @@ class CreateRoomScreen extends StatefulWidget {
 }
 
 class _CreateRoomScreenState extends State<CreateRoomScreen> {
-  final TextEditingController roomController = TextEditingController(text: 'oda1');
+  final TextEditingController roomController = TextEditingController(
+    text: 'oda1',
+  );
   final TextEditingController codeController = TextEditingController();
 
   String sourceLanguageName = 'Türkçe';
@@ -1009,7 +1194,13 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   int selectedCapacity = 2;
   bool showAdvanced = false;
 
-  final List<String> languages = const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce', 'Gürcüce'];
+  final List<String> languages = const [
+    'Türkçe',
+    'Rusça',
+    'Ukraynaca',
+    'İngilizce',
+    'Gürcüce',
+  ];
   final List<int> capacities = const [2, 4, 6, 8];
 
   @override
@@ -1029,8 +1220,12 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   }
 
   void _openCall() {
-    final roomName = roomController.text.trim().isEmpty ? 'oda1' : roomController.text.trim();
-    final code = codeController.text.trim().isEmpty ? _generateRoomCode() : codeController.text.trim();
+    final roomName = roomController.text.trim().isEmpty
+        ? 'oda1'
+        : roomController.text.trim();
+    final code = codeController.text.trim().isEmpty
+        ? _generateRoomCode()
+        : codeController.text.trim();
 
     Navigator.push(
       context,
@@ -1057,27 +1252,45 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.transparent, title: const Text('Oda Oluştur')),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: const Text('Oda Oluştur'),
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 6, 18, 24),
         children: [
           _GlassCard(
             child: Row(
               children: [
-                const Icon(Icons.bolt_rounded, color: AppColors.purple, size: 34),
+                const Icon(
+                  Icons.bolt_rounded,
+                  color: AppColors.purple,
+                  size: 34,
+                ),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Hızlı Başlat', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      Text(
+                        'Hızlı Başlat',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       SizedBox(height: 4),
-                      Text('En popüler ayarlarla hemen odayı oluştur', style: TextStyle(color: Colors.white70)),
+                      Text(
+                        'En popüler ayarlarla hemen odayı oluştur',
+                        style: TextStyle(color: Colors.white70),
+                      ),
                     ],
                   ),
                 ),
                 FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.purple),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.purple,
+                  ),
                   onPressed: _openCall,
                   child: const Text('Hızlı Başlat'),
                 ),
@@ -1089,7 +1302,10 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Ayarlar', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Ayarlar',
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 16),
                 _AppTextField(controller: roomController, label: 'Oda adı'),
                 const SizedBox(height: 14),
@@ -1100,7 +1316,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                         value: sourceLanguageName,
                         label: 'Dil seçimi',
                         items: languages,
-                        onChanged: (v) => setState(() => sourceLanguageName = v!),
+                        onChanged: (v) =>
+                            setState(() => sourceLanguageName = v!),
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -1111,7 +1328,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                         value: targetLanguageName,
                         label: '',
                         items: languages,
-                        onChanged: (v) => setState(() => targetLanguageName = v!),
+                        onChanged: (v) =>
+                            setState(() => targetLanguageName = v!),
                       ),
                     ),
                   ],
@@ -1121,14 +1339,23 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                   value: selectedCapacity,
                   decoration: _inputDecoration('Oda kapasitesi'),
                   dropdownColor: AppColors.card,
-                  items: capacities.map((e) => DropdownMenuItem(value: e, child: Text('$e kişi'))).toList(),
-                  onChanged: (value) => setState(() => selectedCapacity = value ?? 2),
+                  items: capacities
+                      .map(
+                        (e) =>
+                            DropdownMenuItem(value: e, child: Text('$e kişi')),
+                      )
+                      .toList(),
+                  onChanged: (value) =>
+                      setState(() => selectedCapacity = value ?? 2),
                 ),
                 const SizedBox(height: 14),
                 InkWell(
                   onTap: () => setState(() => showAdvanced = !showAdvanced),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 18,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.03),
                       borderRadius: BorderRadius.circular(16),
@@ -1137,19 +1364,26 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                     child: Row(
                       children: [
                         const Expanded(child: Text('Gelişmiş Ayarlar')),
-                        Icon(showAdvanced ? Icons.expand_less : Icons.expand_more),
+                        Icon(
+                          showAdvanced ? Icons.expand_less : Icons.expand_more,
+                        ),
                       ],
                     ),
                   ),
                 ),
                 if (showAdvanced) ...[
                   const SizedBox(height: 14),
-                  _AppTextField(controller: codeController, label: 'Özel oda kodu'),
+                  _AppTextField(
+                    controller: codeController,
+                    label: 'Özel oda kodu',
+                  ),
                   const SizedBox(height: 10),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
-                      onPressed: () => setState(() => codeController.text = _generateRoomCode()),
+                      onPressed: () => setState(
+                        () => codeController.text = _generateRoomCode(),
+                      ),
                       icon: const Icon(Icons.refresh),
                       label: const Text('Yeni Kod Oluştur'),
                     ),
@@ -1163,7 +1397,9 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
             style: FilledButton.styleFrom(
               minimumSize: const Size.fromHeight(58),
               backgroundColor: AppColors.purple,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
             ),
             onPressed: _openCall,
             icon: const Icon(Icons.rocket_launch_rounded),
@@ -1172,7 +1408,10 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
           const SizedBox(height: 10),
           TextButton.icon(
             onPressed: () async {
-              final roomLink = AppStore.inviteLink(roomController.text.trim(), codeController.text.trim());
+              final roomLink = AppStore.inviteLink(
+                roomController.text.trim(),
+                codeController.text.trim(),
+              );
               await Share.share('BridgeCall odama katıl: $roomLink');
             },
             icon: const Icon(Icons.link_rounded),
@@ -1189,7 +1428,12 @@ class JoinRoomScreen extends StatefulWidget {
   final String? initialCode;
   final ProfileData? profile;
 
-  const JoinRoomScreen({super.key, this.initialRoomName, this.initialCode, this.profile});
+  const JoinRoomScreen({
+    super.key,
+    this.initialRoomName,
+    this.initialCode,
+    this.profile,
+  });
 
   @override
   State<JoinRoomScreen> createState() => _JoinRoomScreenState();
@@ -1224,7 +1468,10 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.transparent, title: const Text('Odaya Katıl')),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: const Text('Odaya Katıl'),
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
         children: [
@@ -1234,27 +1481,47 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
               children: [
                 _AppTextField(controller: roomController, label: 'Oda adı'),
                 const SizedBox(height: 14),
-                _AppTextField(controller: codeController, label: 'Oda kodu', hint: '6 haneli oda kodunu gir'),
+                _AppTextField(
+                  controller: codeController,
+                  label: 'Oda kodu',
+                  hint: '6 haneli oda kodunu gir',
+                ),
                 const SizedBox(height: 14),
                 _LanguageDropdown(
                   value: sourceLanguageName,
                   label: 'Benim konuşma dilim',
-                  items: const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce', 'Gürcüce'],
-                  onChanged: (value) => setState(() => sourceLanguageName = value ?? 'Türkçe'),
+                  items: const [
+                    'Türkçe',
+                    'Rusça',
+                    'Ukraynaca',
+                    'İngilizce',
+                    'Gürcüce',
+                  ],
+                  onChanged: (value) =>
+                      setState(() => sourceLanguageName = value ?? 'Türkçe'),
                 ),
                 const SizedBox(height: 14),
                 _LanguageDropdown(
                   value: targetLanguageName,
                   label: 'Dinlemek istediğim dil',
-                  items: const ['Türkçe', 'Rusça', 'Ukraynaca', 'İngilizce', 'Gürcüce'],
-                  onChanged: (value) => setState(() => targetLanguageName = value ?? 'Rusça'),
+                  items: const [
+                    'Türkçe',
+                    'Rusça',
+                    'Ukraynaca',
+                    'İngilizce',
+                    'Gürcüce',
+                  ],
+                  onChanged: (value) =>
+                      setState(() => targetLanguageName = value ?? 'Rusça'),
                 ),
                 const SizedBox(height: 18),
                 FilledButton.icon(
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(56),
                     backgroundColor: AppColors.blue,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
                   ),
                   onPressed: () {
                     Navigator.push(
@@ -1272,15 +1539,22 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                     );
                   },
                   icon: const Icon(Icons.login_rounded),
-                  label: const Text('Odaya Katıl', style: TextStyle(fontSize: 18)),
+                  label: const Text(
+                    'Odaya Katıl',
+                    style: TextStyle(fontSize: 18),
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Center(
                   child: TextButton.icon(
                     onPressed: () async {
-                      await Clipboard.setData(ClipboardData(text: roomController.text.trim()));
+                      await Clipboard.setData(
+                        ClipboardData(text: roomController.text.trim()),
+                      );
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Oda adı kopyalandı')));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Oda adı kopyalandı')),
+                        );
                       }
                     },
                     icon: const Icon(Icons.info_outline),
@@ -1337,6 +1611,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   bool _showChat = true;
   bool _isConnecting = false;
   bool _historySaved = false;
+  bool _microphonePermissionGranted = false;
+  int _silentSubtitleChunks = 0;
 
   String partialSubtitleText = '';
   String finalSubtitleText = '';
@@ -1410,17 +1686,38 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   Future<void> _initAll() async {
     await _localRenderer.initialize();
     await _remoteRenderer.initialize();
+    _microphonePermissionGranted = await _ensureMicrophonePermission();
     await _recorder.openRecorder();
     await _openCamera();
     await _joinRoom();
     if (mounted) {
       setState(() {
-        statusText = widget.isOwner ? 'Oda hazır, katılımcı bekleniyor' : 'Bağlantı kuruluyor';
+        statusText = widget.isOwner
+            ? 'Oda hazır, katılımcı bekleniyor'
+            : 'Bağlantı kuruluyor';
       });
     }
-    if (subtitlesOn) {
+    if (subtitlesOn && _microphonePermissionGranted) {
       unawaited(_startSubtitleRecording());
+    } else if (subtitlesOn && mounted) {
+      setState(() {
+        subtitlesOn = false;
+        statusText = 'Mikrofon izni verilmedi, altyazı kapalı';
+      });
     }
+  }
+
+  Future<bool> _ensureMicrophonePermission() async {
+    final status = await Permission.microphone.status;
+    if (status.isGranted) return true;
+
+    final requested = await Permission.microphone.request();
+    if (requested.isGranted) return true;
+
+    if (mounted) {
+      setState(() => statusText = 'Mikrofon izni gerekli');
+    }
+    return false;
   }
 
   Future<void> _openCamera() async {
@@ -1550,12 +1847,22 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   void _connectTranslateSocket() {
     if (_translateChannel != null) return;
 
-    _translateChannel = WebSocketChannel.connect(Uri.parse('$baseWsUrl/translate'));
+    _translateChannel = WebSocketChannel.connect(
+      Uri.parse('$baseWsUrl/translate'),
+    );
     _translateChannel!.stream.listen(
       (message) {
         try {
           final data = jsonDecode(message);
+          if (mounted && data['noSpeech'] == true) {
+            _silentSubtitleChunks += 1;
+            if (_silentSubtitleChunks >= 3) {
+              setState(() => statusText = 'Konuşman bekleniyor');
+            }
+            return;
+          }
           if (mounted && data['translated'] != null) {
+            _silentSubtitleChunks = 0;
             final stage = (data['stage'] ?? 'partial').toString();
             final original = (data['original'] ?? '').toString().trim();
             final translated = (data['translated'] ?? '').toString().trim();
@@ -1596,16 +1903,29 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         }
       },
       onError: (error) {
-        if (mounted) setState(() => statusText = 'Çeviri soketi hatası: $error');
+        if (mounted)
+          setState(() => statusText = 'Çeviri soketi hatası: $error');
       },
     );
   }
 
   Future<void> _startSubtitleRecording() async {
     if (isRecording) return;
+    _microphonePermissionGranted = await _ensureMicrophonePermission();
+    if (!_microphonePermissionGranted) {
+      if (mounted) {
+        setState(() {
+          subtitlesOn = false;
+          statusText = 'Mikrofon izni olmadan altyazı çalışmaz';
+        });
+      }
+      return;
+    }
     _connectTranslateSocket();
     isRecording = true;
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() => statusText = 'Altyazı mikrofonu dinliyor');
+    }
 
     while (isRecording) {
       try {
@@ -1622,11 +1942,24 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           final file = File(savedPath);
           if (await file.exists()) {
             final fileBytes = await file.readAsBytes();
-            _translateChannel?.sink.add(jsonEncode({
-              'audio': base64Encode(fileBytes),
-              'sourceLang': sourceLanguages[sourceLanguageName],
-              'targetLang': targetLanguages[targetLanguageName],
-            }));
+            if (fileBytes.length < 12000) {
+              if (mounted) {
+                setState(() => statusText = 'Mikrofon sesi algılanmadı');
+              }
+              continue;
+            }
+            final contextText = [
+              finalSubtitleText,
+              partialSubtitleText,
+            ].where((text) => text.trim().isNotEmpty).join(' ');
+            _translateChannel?.sink.add(
+              jsonEncode({
+                'audio': base64Encode(fileBytes),
+                'sourceLang': sourceLanguages[sourceLanguageName],
+                'targetLang': targetLanguages[targetLanguageName],
+                'previousText': contextText,
+              }),
+            );
           }
         }
       } catch (e) {
@@ -1717,13 +2050,18 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
     switch (type) {
       case 'error':
-        if (mounted) setState(() => statusText = data['message']?.toString() ?? 'Bilinmeyen hata');
+        if (mounted)
+          setState(
+            () => statusText = data['message']?.toString() ?? 'Bilinmeyen hata',
+          );
         return;
       case 'room_created':
         if (mounted) {
           setState(() {
             memberCount = data['memberCount'] ?? 1;
-            statusText = widget.isOwner ? 'Katılımcı bekleniyor' : 'Bağlantı kuruluyor';
+            statusText = widget.isOwner
+                ? 'Katılımcı bekleniyor'
+                : 'Bağlantı kuruluyor';
           });
         }
         return;
@@ -1735,7 +2073,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           'requesterId': requesterId,
           'accept': true,
         });
-        if (mounted) setState(() => statusText = 'Katılım isteği otomatik kabul edildi');
+        if (mounted)
+          setState(() => statusText = 'Katılım isteği otomatik kabul edildi');
         return;
       case 'join_accepted':
         if (mounted) {
@@ -1787,17 +2126,23 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         final senderId = data['senderId']?.toString();
         final mine = senderId != null && senderId == myClientId;
         if (incoming.isNotEmpty && mounted) {
-          final message = _ChatMessage(text: incoming, translatedText: translated, isMine: mine);
-          setState(() {
-            _messages.add(message);
-          });
-          await AppStore.addStoredMessage(StoredMessage(
-            roomName: widget.roomName,
+          final message = _ChatMessage(
             text: incoming,
             translatedText: translated,
             isMine: mine,
-            timestamp: DateTime.now(),
-          ));
+          );
+          setState(() {
+            _messages.add(message);
+          });
+          await AppStore.addStoredMessage(
+            StoredMessage(
+              roomName: widget.roomName,
+              text: incoming,
+              translatedText: translated,
+              isMine: mine,
+              timestamp: DateTime.now(),
+            ),
+          );
         }
         return;
       case 'reaction':
@@ -1839,7 +2184,10 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     if (_peerConnection == null) return;
 
     if (type == 'offer') {
-      final desc = RTCSessionDescription(data['sdp']?.toString(), data['sdpType']?.toString());
+      final desc = RTCSessionDescription(
+        data['sdp']?.toString(),
+        data['sdpType']?.toString(),
+      );
       await _peerConnection!.setRemoteDescription(desc);
       final answer = await _peerConnection!.createAnswer();
       await _peerConnection!.setLocalDescription(answer);
@@ -1851,14 +2199,21 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       });
       if (mounted) setState(() => statusText = 'Gelen arama kabul edildi');
     } else if (type == 'answer') {
-      final desc = RTCSessionDescription(data['sdp']?.toString(), data['sdpType']?.toString());
+      final desc = RTCSessionDescription(
+        data['sdp']?.toString(),
+        data['sdpType']?.toString(),
+      );
       await _peerConnection!.setRemoteDescription(desc);
       if (mounted) setState(() => statusText = 'Bağlantı tamamlandı');
     } else if (type == 'candidate') {
       final c = data['candidate'];
       if (c != null) {
         await _peerConnection!.addCandidate(
-          RTCIceCandidate(c['candidate']?.toString(), c['sdpMid']?.toString(), c['sdpMLineIndex'] as int?),
+          RTCIceCandidate(
+            c['candidate']?.toString(),
+            c['sdpMid']?.toString(),
+            c['sdpMLineIndex'] as int?,
+          ),
         );
       }
     }
@@ -1968,12 +2323,14 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     return '$h:$m:$s';
   }
 
-
   String get _displayStatus {
     if (isRecording) return 'Dinleniyor ve altyazı akıyor...';
     final text = statusText.trim();
     if (text.startsWith('Oda oluşturuldu')) return 'Katılımcı bekleniyor';
-    if (text.startsWith('Bağlantı:') || text == 'Kamera açıldı') return remoteReadyForUi ? 'Görüşme devam ediyor' : 'Karşı taraf bekleniyor';
+    if (text.startsWith('Bağlantı:') || text == 'Kamera açıldı')
+      return remoteReadyForUi
+          ? 'Görüşme devam ediyor'
+          : 'Karşı taraf bekleniyor';
     return text;
   }
 
@@ -2024,7 +2381,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                 : Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Color(0xFF111827), Color(0xFF261A1A), Color(0xFF070B14)],
+                        colors: [
+                          Color(0xFF111827),
+                          Color(0xFF261A1A),
+                          Color(0xFF070B14),
+                        ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
@@ -2037,7 +2398,10 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                             child: Container(
                               decoration: const BoxDecoration(
                                 gradient: RadialGradient(
-                                  colors: [Color(0xFF8B5CF6), Colors.transparent],
+                                  colors: [
+                                    Color(0xFF8B5CF6),
+                                    Colors.transparent,
+                                  ],
                                   radius: 0.9,
                                   center: Alignment(0, 0.2),
                                 ),
@@ -2046,21 +2410,34 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                           ),
                         ),
                         const Center(
-                          child: Icon(Icons.person_rounded, size: 160, color: Colors.white24),
+                          child: Icon(
+                            Icons.person_rounded,
+                            size: 160,
+                            color: Colors.white24,
+                          ),
                         ),
                         Positioned(
                           left: horizontal,
                           bottom: 210,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.black.withOpacity(0.34),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.white.withOpacity(0.08)),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.08),
+                              ),
                             ),
                             child: const Text(
                               'Karşı taraf',
-                              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ),
@@ -2089,7 +2466,10 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               left: horizontal,
               top: topInset + 94,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.34),
                   borderRadius: BorderRadius.circular(16),
@@ -2097,7 +2477,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                 ),
                 child: const Text(
                   'Karşı taraf',
-                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
@@ -2136,11 +2520,19 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.circle, color: AppColors.green, size: 9),
+                          const Icon(
+                            Icons.circle,
+                            color: AppColors.green,
+                            size: 9,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             '$_callDuration   Kod: ${widget.privateCode}',
-                            style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
@@ -2151,16 +2543,24 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                 Wrap(
                   spacing: 8,
                   children: [
-                    _TopRoundButton(icon: Icons.groups_rounded, label: '$memberCount'),
+                    _TopRoundButton(
+                      icon: Icons.groups_rounded,
+                      label: '$memberCount',
+                    ),
                     _TopRoundButton(
                       icon: Icons.chat_bubble_outline,
-                      badgeText: _messages.isEmpty ? null : '${_messages.length}',
+                      badgeText: _messages.isEmpty
+                          ? null
+                          : '${_messages.length}',
                       onTap: () => setState(() => _showChat = !_showChat),
                     ),
                     _TopRoundButton(
                       icon: Icons.more_horiz_rounded,
                       onTap: () async {
-                        final link = AppStore.inviteLink(widget.roomName, widget.privateCode);
+                        final link = AppStore.inviteLink(
+                          widget.roomName,
+                          widget.privateCode,
+                        );
                         await Share.share('BridgeCall odama katıl: $link');
                       },
                     ),
@@ -2177,9 +2577,16 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: Colors.white.withOpacity(0.14), width: 1.1),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.14),
+                  width: 1.1,
+                ),
                 boxShadow: const [
-                  BoxShadow(color: Color(0x55000000), blurRadius: 18, offset: Offset(0, 10)),
+                  BoxShadow(
+                    color: Color(0x55000000),
+                    blurRadius: 18,
+                    offset: Offset(0, 10),
+                  ),
                 ],
               ),
               child: ClipRRect(
@@ -2191,26 +2598,38 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                         ? RTCVideoView(
                             _localRenderer,
                             mirror: true,
-                            objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                            objectFit: RTCVideoViewObjectFit
+                                .RTCVideoViewObjectFitCover,
                           )
                         : Container(
                             color: Colors.black38,
                             child: const Center(
-                              child: Icon(Icons.videocam_off_rounded, color: Colors.white54, size: 28),
+                              child: Icon(
+                                Icons.videocam_off_rounded,
+                                color: Colors.white54,
+                                size: 28,
+                              ),
                             ),
                           ),
                     Positioned(
                       left: 8,
                       bottom: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.40),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: const Text(
                           'Sen',
-                          style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
@@ -2218,12 +2637,22 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                       left: 8,
                       bottom: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.42),
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        child: const Text('Sen', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                        child: const Text(
+                          'Sen',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ),
                     Positioned(
@@ -2245,7 +2674,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                             color: Colors.black.withOpacity(0.45),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.cameraswitch_rounded, size: 18, color: Colors.white),
+                          child: const Icon(
+                            Icons.cameraswitch_rounded,
+                            size: 18,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -2270,7 +2703,10 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     border: Border.all(color: Colors.white.withOpacity(0.08)),
                   ),
                   alignment: Alignment.center,
-                  child: Text(_reactionEmoji!, style: const TextStyle(fontSize: 30)),
+                  child: Text(
+                    _reactionEmoji!,
+                    style: const TextStyle(fontSize: 30),
+                  ),
                 ),
               ),
             ),
@@ -2279,7 +2715,10 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             right: horizontal + 72,
             bottom: _showChat ? 276 + bottomInset : 206,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 16, vertical: compact ? 12 : 14),
+              padding: EdgeInsets.symmetric(
+                horizontal: compact ? 14 : 16,
+                vertical: compact ? 12 : 14,
+              ),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.42),
                 borderRadius: BorderRadius.circular(22),
@@ -2306,7 +2745,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                         ),
                       ),
                       const Spacer(),
-                      const Icon(Icons.graphic_eq_rounded, color: AppColors.purple, size: 18),
+                      const Icon(
+                        Icons.graphic_eq_rounded,
+                        color: AppColors.purple,
+                        size: 18,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -2314,8 +2757,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     partialSubtitleText.isNotEmpty
                         ? partialSubtitleText
                         : (finalSubtitleText.isNotEmpty
-                            ? finalSubtitleText
-                            : 'Konuşma başladığında burada anlık altyazı görünecek'),
+                              ? finalSubtitleText
+                              : 'Konuşma başladığında burada anlık altyazı görünecek'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -2325,7 +2768,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                       height: 1.25,
                     ),
                   ),
-                  if (finalSubtitleText.isNotEmpty && partialSubtitleText.isNotEmpty) ...[
+                  if (finalSubtitleText.isNotEmpty &&
+                      partialSubtitleText.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(
                       finalSubtitleText,
@@ -2350,7 +2794,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                         ),
                       ),
                       const Spacer(),
-                      const Icon(Icons.graphic_eq_rounded, color: AppColors.purple, size: 18),
+                      const Icon(
+                        Icons.graphic_eq_rounded,
+                        color: AppColors.purple,
+                        size: 18,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -2358,8 +2806,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     partialTranslatedText.isNotEmpty
                         ? partialTranslatedText
                         : (finalTranslatedText.isNotEmpty
-                            ? finalTranslatedText
-                            : 'Çeviri burada görünecek'),
+                              ? finalTranslatedText
+                              : 'Çeviri burada görünecek'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -2369,7 +2817,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                       height: 1.25,
                     ),
                   ),
-                  if (finalTranslatedText.isNotEmpty && partialTranslatedText.isNotEmpty) ...[
+                  if (finalTranslatedText.isNotEmpty &&
+                      partialTranslatedText.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(
                       finalTranslatedText,
@@ -2408,8 +2857,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     remotePartialOriginalText.isNotEmpty
                         ? remotePartialOriginalText
                         : (remoteFinalOriginalText.isNotEmpty
-                            ? remoteFinalOriginalText
-                            : 'Karşı taraf konuştuğunda burada orijinal metin akacak'),
+                              ? remoteFinalOriginalText
+                              : 'Karşı taraf konuştuğunda burada orijinal metin akacak'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -2419,7 +2868,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                       height: 1.25,
                     ),
                   ),
-                  if (remoteFinalOriginalText.isNotEmpty && remotePartialOriginalText.isNotEmpty) ...[
+                  if (remoteFinalOriginalText.isNotEmpty &&
+                      remotePartialOriginalText.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(
                       remoteFinalOriginalText,
@@ -2444,7 +2894,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                         ),
                       ),
                       const Spacer(),
-                      const Icon(Icons.graphic_eq_rounded, color: AppColors.purple, size: 18),
+                      const Icon(
+                        Icons.graphic_eq_rounded,
+                        color: AppColors.purple,
+                        size: 18,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -2452,8 +2906,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     remotePartialTranslatedText.isNotEmpty
                         ? remotePartialTranslatedText
                         : (remoteFinalTranslatedText.isNotEmpty
-                            ? remoteFinalTranslatedText
-                            : 'Karşı tarafın çevirisi burada görünecek'),
+                              ? remoteFinalTranslatedText
+                              : 'Karşı tarafın çevirisi burada görünecek'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -2463,7 +2917,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                       height: 1.25,
                     ),
                   ),
-                  if (remoteFinalTranslatedText.isNotEmpty && remotePartialTranslatedText.isNotEmpty) ...[
+                  if (remoteFinalTranslatedText.isNotEmpty &&
+                      remotePartialTranslatedText.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(
                       remoteFinalTranslatedText,
@@ -2486,7 +2941,10 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             bottom: _showChat ? 446 + bottomInset : 390,
             child: AnimatedBuilder(
               animation: _waveController,
-              builder: (context, _) => _WaveBar(animation: _waveController, active: isRecording || subtitlesOn),
+              builder: (context, _) => _WaveBar(
+                animation: _waveController,
+                active: isRecording || subtitlesOn,
+              ),
             ),
           ),
           Positioned(
@@ -2520,10 +2978,15 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.36),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white.withOpacity(0.08)),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.08),
+                          ),
                         ),
                         alignment: Alignment.center,
-                        child: Text(emoji, style: TextStyle(fontSize: compact ? 24 : 26)),
+                        child: Text(
+                          emoji,
+                          style: TextStyle(fontSize: compact ? 24 : 26),
+                        ),
                       ),
                     ),
                   ),
@@ -2546,13 +3009,17 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     onTap: _toggleMic,
                   ),
                   _controlItem(
-                    icon: camOn ? Icons.videocam_rounded : Icons.videocam_off_rounded,
+                    icon: camOn
+                        ? Icons.videocam_rounded
+                        : Icons.videocam_off_rounded,
                     label: 'Kamera',
                     color: camOn ? AppColors.blue : Colors.white24,
                     onTap: _toggleCamera,
                   ),
                   _controlItem(
-                    icon: subtitlesOn ? Icons.translate_rounded : Icons.translate_outlined,
+                    icon: subtitlesOn
+                        ? Icons.translate_rounded
+                        : Icons.translate_outlined,
                     label: 'Çeviri',
                     color: subtitlesOn ? AppColors.purple : Colors.white24,
                     onTap: () async {
@@ -2645,7 +3112,12 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
   Widget _chatPanel({double bottomInset = 0}) {
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 14, 16, bottomInset > 0 ? bottomInset + 12 : 18),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        14,
+        16,
+        bottomInset > 0 ? bottomInset + 12 : 18,
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFF08101F).withOpacity(0.98),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -2665,7 +3137,10 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Text('Sohbet', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+              const Text(
+                'Sohbet',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              ),
               const Spacer(),
               IconButton(
                 onPressed: () => setState(() => _showChat = false),
@@ -2679,7 +3154,12 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             child: _messages.isEmpty
                 ? const Padding(
                     padding: EdgeInsets.symmetric(vertical: 28),
-                    child: Center(child: Text('İlk mesajı sen gönder', style: TextStyle(color: Colors.white70))),
+                    child: Center(
+                      child: Text(
+                        'İlk mesajı sen gönder',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ),
                   )
                 : ListView.separated(
                     shrinkWrap: true,
@@ -2689,21 +3169,39 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     itemBuilder: (context, index) {
                       final item = _messages[_messages.length - 1 - index];
                       return Align(
-                        alignment: item.isMine ? Alignment.centerRight : Alignment.centerLeft,
+                        alignment: item.isMine
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
                         child: Container(
-                          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          constraints: BoxConstraints(
+                            maxWidth: MediaQuery.of(context).size.width * 0.72,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
-                            color: item.isMine ? AppColors.purple : Colors.white.withOpacity(0.05),
+                            color: item.isMine
+                                ? AppColors.purple
+                                : Colors.white.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(item.text, style: const TextStyle(fontSize: 15)),
+                              Text(
+                                item.text,
+                                style: const TextStyle(fontSize: 15),
+                              ),
                               if (item.translatedText.isNotEmpty) ...[
                                 const SizedBox(height: 4),
-                                Text(item.translatedText, style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                                Text(
+                                  item.translatedText,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                  ),
+                                ),
                               ],
                             ],
                           ),
@@ -2718,7 +3216,10 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               Expanded(
                 child: TextField(
                   controller: _chatController,
-                  decoration: _inputDecoration('Mesaj yaz...', suffixIcon: Icons.translate_rounded),
+                  decoration: _inputDecoration(
+                    'Mesaj yaz...',
+                    suffixIcon: Icons.translate_rounded,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -2765,14 +3266,33 @@ class _TopRoundButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
       ),
       child: badgeText == null
-          ? Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon), if (label != null) ...[const SizedBox(width: 8), Text(label!)]])
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon),
+                if (label != null) ...[const SizedBox(width: 8), Text(label!)],
+              ],
+            )
           : Badge(
               label: Text(badgeText!),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon), if (label != null) ...[const SizedBox(width: 8), Text(label!)]]),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon),
+                  if (label != null) ...[
+                    const SizedBox(width: 8),
+                    Text(label!),
+                  ],
+                ],
+              ),
             ),
     );
     if (onTap == null) return child;
-    return InkWell(onTap: onTap, borderRadius: BorderRadius.circular(18), child: child);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: child,
+    );
   }
 }
 
@@ -2780,16 +3300,26 @@ class _WaveBar extends StatelessWidget {
   final Animation<double> animation;
   final bool active;
 
-  const _WaveBar({
-    required this.animation,
-    required this.active,
-  });
+  const _WaveBar({required this.animation, required this.active});
 
   @override
   Widget build(BuildContext context) {
-    final List<double> baseHeights = [6, 10, 18, 28, 20, 36, 24, 12, 30, 22, 14, 26, 16, 8]
-        .map((e) => e.toDouble())
-        .toList();
+    final List<double> baseHeights = [
+      6,
+      10,
+      18,
+      28,
+      20,
+      36,
+      24,
+      12,
+      30,
+      22,
+      14,
+      26,
+      16,
+      8,
+    ].map((e) => e.toDouble()).toList();
 
     return AnimatedBuilder(
       animation: animation,
@@ -2799,7 +3329,9 @@ class _WaveBar extends StatelessWidget {
           children: List.generate(baseHeights.length, (index) {
             final progress = (animation.value + (index * 0.07)) % 1.0;
             final pulse = progress < 0.5 ? progress * 2 : (1 - progress) * 2;
-            final dynamicHeight = baseHeights[index] + ((active ? 1.0 : 0.35) * (8 + (pulse * 12)));
+            final dynamicHeight =
+                baseHeights[index] +
+                ((active ? 1.0 : 0.35) * (8 + (pulse * 12)));
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 3),
               width: 5,
@@ -2851,7 +3383,10 @@ class _BottomFeature extends StatelessWidget {
           const SizedBox(height: 10),
           Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          Text(
+            subtitle,
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
+          ),
         ],
       ),
     );
@@ -2877,7 +3412,9 @@ class _LanguageDropdown extends StatelessWidget {
       value: value,
       decoration: _inputDecoration(label),
       dropdownColor: AppColors.card,
-      items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+      items: items
+          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+          .toList(),
       onChanged: onChanged,
     );
   }
@@ -2903,7 +3440,11 @@ class _AppTextField extends StatelessWidget {
   }
 }
 
-InputDecoration _inputDecoration(String label, {String? hint, IconData? suffixIcon}) {
+InputDecoration _inputDecoration(
+  String label, {
+  String? hint,
+  IconData? suffixIcon,
+}) {
   return InputDecoration(
     labelText: label.isEmpty ? null : label,
     hintText: hint,
@@ -2918,9 +3459,7 @@ InputDecoration _inputDecoration(String label, {String? hint, IconData? suffixIc
       borderSide: const BorderSide(color: AppColors.purple),
       borderRadius: BorderRadius.circular(18),
     ),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(18),
-    ),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
   );
 }
 
@@ -2950,7 +3489,11 @@ class _ActionButton extends StatelessWidget {
           gradient: LinearGradient(colors: gradient),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
-            BoxShadow(color: gradient.first.withOpacity(0.25), blurRadius: 18, offset: const Offset(0, 10)),
+            BoxShadow(
+              color: gradient.first.withOpacity(0.25),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
           ],
         ),
         child: Row(
@@ -2969,9 +3512,21 @@ class _ActionButton extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 6),
-                  Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.82), fontSize: 16)),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.82),
+                      fontSize: 16,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -3000,7 +3555,11 @@ class _GlassCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.border),
         boxShadow: const [
-          BoxShadow(color: Colors.black38, blurRadius: 18, offset: Offset(0, 8)),
+          BoxShadow(
+            color: Colors.black38,
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
         ],
       ),
       child: child,

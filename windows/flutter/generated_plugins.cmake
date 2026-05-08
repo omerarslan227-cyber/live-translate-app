@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   flutter_sound
+  flutter_tts
   flutter_webrtc
   permission_handler_windows
   share_plus

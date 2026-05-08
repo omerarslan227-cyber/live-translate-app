@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_sound/flutter_sound.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -1596,6 +1599,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
   final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
+  final FlutterTts _tts = FlutterTts();
   final TextEditingController _chatController = TextEditingController();
 
   MediaStream? _localStream;
@@ -1612,6 +1616,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   bool _isConnecting = false;
   bool _historySaved = false;
   bool _microphonePermissionGranted = false;
+  bool _isSpeakingTranslated = false;
   int _silentSubtitleChunks = 0;
 
   String partialSubtitleText = '';
@@ -1686,6 +1691,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   Future<void> _initAll() async {
     await _localRenderer.initialize();
     await _remoteRenderer.initialize();
+    await _configureTts();
     _microphonePermissionGranted = await _ensureMicrophonePermission();
     await _recorder.openRecorder();
     await _openCamera();
@@ -1709,9 +1715,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
   Future<bool> _ensureMicrophonePermission() async {
     final status = await Permission.microphone.status;
+    _voiceLog('Microphone permission status', {'status': status.name});
     if (status.isGranted) return true;
 
     final requested = await Permission.microphone.request();
+    _voiceLog('Microphone permission requested', {'status': requested.name});
     if (requested.isGranted) return true;
 
     if (mounted) {
@@ -1720,10 +1728,39 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     return false;
   }
 
+  Future<void> _configureTts() async {
+    await _tts.setVolume(1.0);
+    await _tts.setPitch(1.0);
+    await _tts.setSpeechRate(0.46);
+    await _tts.awaitSpeakCompletion(false);
+    _tts.setStartHandler(() {
+      _voiceLog('Playback started');
+      if (mounted) setState(() => _isSpeakingTranslated = true);
+    });
+    _tts.setCompletionHandler(() {
+      _voiceLog('Playback ended');
+      if (mounted) setState(() => _isSpeakingTranslated = false);
+    });
+    _tts.setErrorHandler((message) {
+      _voiceLog('TTS error', {'message': message});
+      if (mounted) setState(() => _isSpeakingTranslated = false);
+    });
+  }
+
+  void _voiceLog(String event, [Map<String, Object?> data = const {}]) {
+    debugPrint('[BridgeCallVoice] $event ${jsonEncode(data)}');
+  }
+
   Future<void> _openCamera() async {
     try {
       final stream = await navigator.mediaDevices.getUserMedia({
-        'audio': true,
+        'audio': {
+          'echoCancellation': true,
+          'noiseSuppression': true,
+          'autoGainControl': true,
+          'sampleRate': 16000,
+          'channelCount': 1,
+        },
         'video': {
           'facingMode': 'user',
           'width': {'ideal': 720},
@@ -1732,6 +1769,13 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         },
       });
       _localStream = stream;
+      _voiceLog('WebRTC microphone opened', {
+        'audioTracks': stream.getAudioTracks().length,
+        'videoTracks': stream.getVideoTracks().length,
+        'echoCancellation': true,
+        'noiseSuppression': true,
+        'autoGainControl': true,
+      });
       _localRenderer.srcObject = stream;
       if (mounted) {
         setState(() {
@@ -1854,8 +1898,20 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       (message) {
         try {
           final data = jsonDecode(message);
+          final timing = data['timingMs'];
+          if (timing is Map) {
+            _voiceLog('Backend response time', {
+              'timingMs': timing,
+              'audioBytes': data['audioBytes'],
+              'format': data['format'],
+            });
+          }
           if (mounted && data['noSpeech'] == true) {
             _silentSubtitleChunks += 1;
+            _voiceLog('STT no speech', {
+              'silentChunks': _silentSubtitleChunks,
+              'audioBytes': data['audioBytes'],
+            });
             if (_silentSubtitleChunks >= 3) {
               setState(() => statusText = 'Konuşman bekleniyor');
             }
@@ -1866,6 +1922,13 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             final stage = (data['stage'] ?? 'partial').toString();
             final original = (data['original'] ?? '').toString().trim();
             final translated = (data['translated'] ?? '').toString().trim();
+            _voiceLog('STT/translation result', {
+              'stage': stage,
+              'originalLength': original.length,
+              'translatedLength': translated.length,
+              'sourceLang': data['sourceLang'],
+              'targetLang': data['targetLang'],
+            });
 
             setState(() {
               if (stage == 'final') {
@@ -1930,6 +1993,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     while (isRecording) {
       try {
         final path = await _tempWavPath();
+        _voiceLog('Recorder start', {
+          'format': 'pcm16wav',
+          'sampleRate': 16000,
+          'channels': 1,
+        });
         await _recorder.startRecorder(
           toFile: path,
           codec: Codec.pcm16WAV,
@@ -1942,9 +2010,23 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           final file = File(savedPath);
           if (await file.exists()) {
             final fileBytes = await file.readAsBytes();
+            final rms = _wavRms(fileBytes);
+            _voiceLog('Audio recorded', {
+              'recorded': true,
+              'bytes': fileBytes.length,
+              'format': 'pcm16wav',
+              'sampleRate': 16000,
+              'rms': rms,
+            });
             if (fileBytes.length < 12000) {
               if (mounted) {
                 setState(() => statusText = 'Mikrofon sesi algılanmadı');
+              }
+              continue;
+            }
+            if (rms < 90) {
+              if (mounted) {
+                setState(() => statusText = 'Ses çok düşük algılandı');
               }
               continue;
             }
@@ -1960,7 +2042,17 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                 'previousText': contextText,
               }),
             );
+          } else {
+            _voiceLog('Audio recorded', {
+              'recorded': false,
+              'reason': 'missing_file',
+            });
           }
+        } else {
+          _voiceLog('Audio recorded', {
+            'recorded': false,
+            'reason': 'null_path',
+          });
         }
       } catch (e) {
         if (mounted) setState(() => statusText = 'Kayıt hatası: $e');
@@ -1976,6 +2068,20 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       await _recorder.stopRecorder();
     } catch (_) {}
     if (mounted) setState(() {});
+  }
+
+  double _wavRms(Uint8List bytes) {
+    if (bytes.length <= 44) return 0;
+    final data = ByteData.sublistView(bytes);
+    double sumSquares = 0;
+    var count = 0;
+    for (var offset = 44; offset + 1 < bytes.length; offset += 2) {
+      final sample = data.getInt16(offset, Endian.little);
+      sumSquares += sample * sample;
+      count += 1;
+    }
+    if (count == 0) return 0;
+    return math.sqrt(sumSquares / count);
   }
 
   Future<void> _startCall() async {
@@ -2035,6 +2141,45 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         }
       }
     });
+
+    if (stage == 'final' && translated.isNotEmpty) {
+      unawaited(
+        _speakTranslatedText(translated, data['targetLang']?.toString()),
+      );
+    }
+  }
+
+  Future<void> _speakTranslatedText(String text, String? backendLang) async {
+    final cleanText = text.trim();
+    if (cleanText.isEmpty) return;
+    try {
+      await _tts.setLanguage(_ttsLanguageCode(backendLang));
+      _voiceLog('TTS result', {
+        'textLength': cleanText.length,
+        'language': backendLang,
+      });
+      await _tts.speak(cleanText);
+    } catch (e) {
+      _voiceLog('TTS error', {'error': e.toString()});
+    }
+  }
+
+  String _ttsLanguageCode(String? backendLang) {
+    switch ((backendLang ?? '').toUpperCase()) {
+      case 'TR':
+        return 'tr-TR';
+      case 'RU':
+        return 'ru-RU';
+      case 'UK':
+        return 'uk-UA';
+      case 'KA':
+        return 'ka-GE';
+      case 'EN':
+      case 'EN-US':
+        return 'en-US';
+      default:
+        return 'en-US';
+    }
   }
 
   Future<void> _handleSignal(dynamic rawMessage) async {
@@ -2311,6 +2456,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     _signalChannel = null;
     await _translateChannel?.sink.close();
     _translateChannel = null;
+    await _tts.stop();
 
     if (mounted) Navigator.pop(context);
   }
@@ -2324,6 +2470,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   }
 
   String get _displayStatus {
+    if (_isSpeakingTranslated) return 'Çeviri sesi oynatılıyor...';
     if (isRecording) return 'Dinleniyor ve altyazı akıyor...';
     final text = statusText.trim();
     if (text.startsWith('Oda oluşturuldu')) return 'Katılımcı bekleniyor';
@@ -2347,6 +2494,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     _signalChannel?.sink.close();
     _translateChannel?.sink.close();
     _peerConnection?.close();
+    _tts.stop();
     _localStream?.getTracks().forEach((track) => track.stop());
     _localStream?.dispose();
     _chatController.dispose();

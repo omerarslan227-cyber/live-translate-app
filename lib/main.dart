@@ -1141,6 +1141,10 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
         codec: Codec.pcm16WAV,
         numChannels: 1,
         sampleRate: 16000,
+        audioSource: AudioSource.voice_communication,
+        enableVoiceProcessing: true,
+        enableNoiseSuppression: true,
+        enableEchoCancellation: true,
       );
       await Future.delayed(const Duration(seconds: 3));
       final savedPath = await _diagnosticRecorder.stopRecorder();
@@ -2064,6 +2068,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   bool _isConnecting = false;
   bool _historySaved = false;
   bool _microphonePermissionGranted = false;
+  bool _recorderReady = false;
   bool _isSpeakingTranslated = false;
   int _silentSubtitleChunks = 0;
 
@@ -2141,7 +2146,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     await _remoteRenderer.initialize();
     await _configureTts();
     _microphonePermissionGranted = await _ensureMicrophonePermission();
-    await _recorder.openRecorder();
+    await _openSubtitleRecorder();
     await _openCamera();
     await _joinRoom();
     if (mounted) {
@@ -2159,6 +2164,38 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         statusText = 'Mikrofon izni verilmedi, altyazı kapalı';
       });
     }
+  }
+
+  Future<bool> _openSubtitleRecorder() async {
+    if (_recorderReady) return true;
+    try {
+      await _recorder.openRecorder();
+      await _recorder.setSubscriptionDuration(
+        const Duration(milliseconds: 200),
+      );
+      _recorderReady = true;
+      _voiceLog('Subtitle recorder opened');
+      return true;
+    } catch (e) {
+      _recorderReady = false;
+      _voiceLog('Subtitle recorder open failed', {'error': e.toString()});
+      if (mounted) {
+        setState(() => statusText = 'Altyazı kayıt motoru açılamadı');
+      }
+      return false;
+    }
+  }
+
+  Future<bool> _reopenSubtitleRecorder() async {
+    try {
+      await _recorder.stopRecorder();
+    } catch (_) {}
+    try {
+      await _recorder.closeRecorder();
+    } catch (_) {}
+    _recorderReady = false;
+    await Future.delayed(const Duration(milliseconds: 250));
+    return _openSubtitleRecorder();
   }
 
   Future<bool> _ensureMicrophonePermission() async {
@@ -2468,6 +2505,15 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       }
       return;
     }
+    if (!await _openSubtitleRecorder()) {
+      if (mounted) {
+        setState(() {
+          subtitlesOn = false;
+          statusText = 'Mikrofon izni var ama kayıt motoru başlamadı';
+        });
+      }
+      return;
+    }
     _connectTranslateSocket();
     isRecording = true;
     if (mounted) {
@@ -2477,19 +2523,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     while (isRecording) {
       try {
         final path = await _tempWavPath();
-        _voiceLog('Recorder start', {
-          'format': 'pcm16wav',
-          'sampleRate': 16000,
-          'channels': 1,
-        });
-        await _recorder.startRecorder(
-          toFile: path,
-          codec: Codec.pcm16WAV,
-          numChannels: 1,
-          sampleRate: 16000,
-        );
-        await Future.delayed(const Duration(milliseconds: 1300));
-        final savedPath = await _recorder.stopRecorder();
+        final savedPath = await _recordSubtitleChunk(path);
         if (savedPath != null) {
           final file = File(savedPath);
           if (await file.exists()) {
@@ -2538,11 +2572,82 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           });
         }
       } catch (e) {
-        if (mounted) setState(() => statusText = 'Kayıt hatası: $e');
+        _voiceLog('Subtitle recorder failed, retrying once', {
+          'error': e.toString(),
+        });
+        final recovered = await _retrySubtitleChunkAfterRecorderReset();
+        if (recovered) continue;
+        if (mounted) {
+          setState(
+            () => statusText =
+                'Mikrofon izni var ama iPhone kayıt motoru sesi alamadı',
+          );
+        }
+        subtitlesOn = false;
         isRecording = false;
       }
     }
     if (mounted) setState(() {});
+  }
+
+  Future<String?> _recordSubtitleChunk(String path) async {
+    _voiceLog('Recorder start', {
+      'format': 'pcm16wav',
+      'sampleRate': 16000,
+      'channels': 1,
+      'audioSource': 'voice_communication',
+      'voiceProcessing': true,
+    });
+    await _recorder.startRecorder(
+      toFile: path,
+      codec: Codec.pcm16WAV,
+      numChannels: 1,
+      sampleRate: 16000,
+      audioSource: AudioSource.voice_communication,
+      enableVoiceProcessing: true,
+      enableNoiseSuppression: true,
+      enableEchoCancellation: true,
+    );
+    await Future.delayed(const Duration(milliseconds: 1300));
+    return _recorder.stopRecorder();
+  }
+
+  Future<bool> _retrySubtitleChunkAfterRecorderReset() async {
+    final reopened = await _reopenSubtitleRecorder();
+    if (!reopened || !isRecording) return false;
+    try {
+      final retryPath = await _tempWavPath();
+      final savedPath = await _recordSubtitleChunk(retryPath);
+      if (savedPath == null) return false;
+      final file = File(savedPath);
+      if (!await file.exists()) return false;
+      final fileBytes = await file.readAsBytes();
+      final rms = calculateWavRms(fileBytes);
+      _voiceLog('Audio recorded after recorder retry', {
+        'recorded': true,
+        'bytes': fileBytes.length,
+        'format': 'pcm16wav',
+        'sampleRate': 16000,
+        'rms': rms,
+      });
+      if (fileBytes.length < 12000) return true;
+      final contextText = [
+        finalSubtitleText,
+        partialSubtitleText,
+      ].where((text) => text.trim().isNotEmpty).join(' ');
+      _translateChannel?.sink.add(
+        jsonEncode({
+          'audio': base64Encode(fileBytes),
+          'sourceLang': sourceLanguages[sourceLanguageName],
+          'targetLang': targetLanguages[targetLanguageName],
+          'previousText': contextText,
+        }),
+      );
+      return true;
+    } catch (e) {
+      _voiceLog('Subtitle recorder retry failed', {'error': e.toString()});
+      return false;
+    }
   }
 
   Future<void> _stopSubtitleRecording() async {

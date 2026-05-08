@@ -357,22 +357,36 @@ class HomeScreen extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
                   children: [
                     Row(
-                      children: const [
-                        Icon(
+                      children: [
+                        const Icon(
                           Icons.call_rounded,
                           color: AppColors.purple,
                           size: 30,
                         ),
-                        SizedBox(width: 10),
-                        Text(
+                        const SizedBox(width: 10),
+                        const Text(
                           'BridgeCall',
                           style: TextStyle(
                             fontSize: 30,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Spacer(),
-                        Icon(Icons.settings_outlined, color: Colors.white70),
+                        const Spacer(),
+                        IconButton(
+                          tooltip: 'Ses Tanılama',
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const VoiceDiagnosticsScreen(),
+                              ),
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.monitor_heart_outlined,
+                            color: Colors.white70,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 18),
@@ -1016,6 +1030,374 @@ class HistoryScreen extends StatelessWidget {
       },
     );
   }
+}
+
+class VoiceDiagnosticsScreen extends StatefulWidget {
+  const VoiceDiagnosticsScreen({super.key});
+
+  @override
+  State<VoiceDiagnosticsScreen> createState() => _VoiceDiagnosticsScreenState();
+}
+
+class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
+  final FlutterSoundRecorder _diagnosticRecorder = FlutterSoundRecorder();
+  final FlutterTts _diagnosticTts = FlutterTts();
+
+  bool _running = false;
+  bool _recorderReady = false;
+  String _summary = 'Test başlatılmadı';
+  final Map<String, String> _results = {
+    'Mikrofon izni': 'Bekliyor',
+    'Kayıt': 'Bekliyor',
+    'Audio format': 'Bekliyor',
+    'Backend': 'Bekliyor',
+    'STT': 'Bekliyor',
+    'Çeviri': 'Bekliyor',
+    'TTS': 'Bekliyor',
+    'Toplam süre': 'Bekliyor',
+  };
+  final List<String> _logs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _prepare();
+  }
+
+  Future<void> _prepare() async {
+    await _diagnosticRecorder.openRecorder();
+    await _diagnosticTts.setSpeechRate(0.46);
+    await _diagnosticTts.setVolume(1.0);
+    await _diagnosticTts.setPitch(1.0);
+    if (mounted) setState(() => _recorderReady = true);
+  }
+
+  @override
+  void dispose() {
+    _diagnosticRecorder.closeRecorder();
+    _diagnosticTts.stop();
+    super.dispose();
+  }
+
+  void _setResult(String key, String value) {
+    setState(() {
+      _results[key] = value;
+      _logs.insert(
+        0,
+        '${DateTime.now().toIso8601String().substring(11, 19)}  $key: $value',
+      );
+    });
+    debugPrint('[BridgeCallVoiceDiag] $key: $value');
+  }
+
+  Future<void> _runDiagnostics() async {
+    if (_running) return;
+    setState(() {
+      _running = true;
+      _summary = 'Tanılama çalışıyor...';
+      _logs.clear();
+      for (final key in _results.keys.toList()) {
+        _results[key] = 'Bekliyor';
+      }
+    });
+
+    final started = DateTime.now();
+    try {
+      final permission = await Permission.microphone.request();
+      if (!permission.isGranted) {
+        _setResult('Mikrofon izni', 'Başarısız: ${permission.name}');
+        setState(
+          () => _summary = 'Mikrofon izni olmadan sesli çeviri çalışmaz.',
+        );
+        return;
+      }
+      _setResult('Mikrofon izni', 'Başarılı');
+
+      final health = await _fetchBackendHealth();
+      _setResult(
+        'Backend',
+        health == null
+            ? 'Başarısız: health cevabı yok'
+            : 'Başarılı: model=${health['whisper_model']} beam=${health['whisper_beam_size']}',
+      );
+      if (health == null) return;
+
+      if (!_recorderReady) {
+        await _prepare();
+      }
+
+      final path = await _diagnosticPath();
+      _setResult('Kayıt', '3 saniye konuş...');
+      await _diagnosticRecorder.startRecorder(
+        toFile: path,
+        codec: Codec.pcm16WAV,
+        numChannels: 1,
+        sampleRate: 16000,
+      );
+      await Future.delayed(const Duration(seconds: 3));
+      final savedPath = await _diagnosticRecorder.stopRecorder();
+      if (savedPath == null) {
+        _setResult('Kayıt', 'Başarısız: dosya yolu boş');
+        return;
+      }
+
+      final file = File(savedPath);
+      if (!await file.exists()) {
+        _setResult('Kayıt', 'Başarısız: dosya oluşmadı');
+        return;
+      }
+
+      final bytes = await file.readAsBytes();
+      final rms = calculateWavRms(bytes);
+      _setResult(
+        'Kayıt',
+        'Başarılı: ${bytes.length} byte, RMS ${rms.toStringAsFixed(0)}',
+      );
+      _setResult('Audio format', 'pcm16wav, 16kHz, mono');
+      if (bytes.length < 12000 || rms < 60) {
+        _setResult('STT', 'Atlandı: ses çok düşük veya kısa');
+        setState(
+          () =>
+              _summary = 'Mikrofon çalışıyor ama ses seviyesi düşük görünüyor.',
+        );
+        return;
+      }
+
+      final response = await _sendAudioToBackend(bytes);
+      if (response == null) {
+        _setResult('STT', 'Başarısız: backend cevap vermedi');
+        return;
+      }
+      if (response['noSpeech'] == true) {
+        _setResult('STT', 'Başarısız: backend ses algılamadı');
+        _setResult('Toplam süre', '${response['timingMs'] ?? '-'}');
+        return;
+      }
+      if (response['error'] != null) {
+        _setResult('STT', 'Başarısız: ${response['error']}');
+        return;
+      }
+
+      final original = (response['original'] ?? '').toString();
+      final translated = (response['translated'] ?? '').toString();
+      _setResult(
+        'STT',
+        original.isEmpty ? 'Başarısız: boş metin' : 'Başarılı: $original',
+      );
+      _setResult(
+        'Çeviri',
+        translated.isEmpty ? 'Başarısız: boş çeviri' : 'Başarılı: $translated',
+      );
+      _setResult('Toplam süre', '${response['timingMs'] ?? '-'}');
+
+      if (translated.isNotEmpty) {
+        await _diagnosticTts.setLanguage('en-US');
+        await _diagnosticTts.speak(translated);
+        _setResult('TTS', 'Başarılı: cihaz TTS başlatıldı');
+      } else {
+        _setResult('TTS', 'Atlandı: çeviri yok');
+      }
+
+      final elapsed = DateTime.now().difference(started).inMilliseconds;
+      setState(() => _summary = 'Tanılama tamamlandı (${elapsed}ms).');
+    } catch (e) {
+      setState(() => _summary = 'Tanılama hatası: $e');
+      _logs.insert(0, 'Hata: $e');
+    } finally {
+      if (mounted) setState(() => _running = false);
+    }
+  }
+
+  Future<String> _diagnosticPath() async {
+    final dir = await getTemporaryDirectory();
+    return '${dir.path}/bridgecall_voice_diagnostic.wav';
+  }
+
+  Future<Map<String, dynamic>?> _fetchBackendHealth() async {
+    final client = HttpClient();
+    try {
+      final request = await client
+          .getUrl(
+            Uri.parse(
+              'https://live-translate-backed-production.up.railway.app/health',
+            ),
+          )
+          .timeout(const Duration(seconds: 10));
+      final response = await request.close().timeout(
+        const Duration(seconds: 10),
+      );
+      final body = await response.transform(utf8.decoder).join();
+      if (response.statusCode != 200) return null;
+      return jsonDecode(body) as Map<String, dynamic>;
+    } catch (e) {
+      _logs.insert(0, 'Backend health hatası: $e');
+      return null;
+    } finally {
+      client.close(force: true);
+    }
+  }
+
+  Future<Map<String, dynamic>?> _sendAudioToBackend(Uint8List bytes) async {
+    final channel = WebSocketChannel.connect(Uri.parse('$baseWsUrl/translate'));
+    try {
+      channel.sink.add(
+        jsonEncode({
+          'audio': base64Encode(bytes),
+          'sourceLang': 'TR',
+          'targetLang': 'EN-US',
+          'previousText': '',
+        }),
+      );
+      final raw = await channel.stream.first.timeout(
+        const Duration(seconds: 30),
+      );
+      return jsonDecode(raw as String) as Map<String, dynamic>;
+    } catch (e) {
+      _logs.insert(0, 'Backend upload/STT hatası: $e');
+      return null;
+    } finally {
+      channel.sink.close();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: const Text('Ses Tanılama'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(18),
+        children: [
+          _GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Ses Sistemi Kontrolü',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                Text(_summary, style: const TextStyle(color: Colors.white70)),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.purple,
+                    minimumSize: const Size.fromHeight(54),
+                  ),
+                  onPressed: _running ? null : _runDiagnostics,
+                  icon: Icon(
+                    _running ? Icons.hourglass_top_rounded : Icons.mic_rounded,
+                  ),
+                  label: Text(
+                    _running
+                        ? 'Test çalışıyor'
+                        : '3 Saniyelik Ses Testi Başlat',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _GlassCard(
+            child: Column(
+              children: _results.entries
+                  .map(
+                    (entry) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            entry.value.startsWith('Başarılı')
+                                ? Icons.check_circle_rounded
+                                : entry.value.startsWith('Başarısız')
+                                ? Icons.error_rounded
+                                : Icons.info_outline_rounded,
+                            color: entry.value.startsWith('Başarılı')
+                                ? AppColors.green
+                                : entry.value.startsWith('Başarısız')
+                                ? AppColors.red
+                                : AppColors.yellow,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  entry.key,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  entry.value,
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Canlı Log',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                if (_logs.isEmpty)
+                  const Text(
+                    'Henüz log yok',
+                    style: TextStyle(color: Colors.white60),
+                  )
+                else
+                  ..._logs
+                      .take(8)
+                      .map(
+                        (line) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            line,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+double calculateWavRms(Uint8List bytes) {
+  if (bytes.length <= 44) return 0;
+  final data = ByteData.sublistView(bytes);
+  double sumSquares = 0;
+  var count = 0;
+  for (var offset = 44; offset + 1 < bytes.length; offset += 2) {
+    final sample = data.getInt16(offset, Endian.little);
+    sumSquares += sample * sample;
+    count += 1;
+  }
+  if (count == 0) return 0;
+  return math.sqrt(sumSquares / count);
 }
 
 class ProfileScreen extends StatefulWidget {
@@ -2010,7 +2392,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           final file = File(savedPath);
           if (await file.exists()) {
             final fileBytes = await file.readAsBytes();
-            final rms = _wavRms(fileBytes);
+            final rms = calculateWavRms(fileBytes);
             _voiceLog('Audio recorded', {
               'recorded': true,
               'bytes': fileBytes.length,
@@ -2028,7 +2410,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               if (mounted) {
                 setState(() => statusText = 'Ses çok düşük algılandı');
               }
-              continue;
             }
             final contextText = [
               finalSubtitleText,
@@ -2068,20 +2449,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       await _recorder.stopRecorder();
     } catch (_) {}
     if (mounted) setState(() {});
-  }
-
-  double _wavRms(Uint8List bytes) {
-    if (bytes.length <= 44) return 0;
-    final data = ByteData.sublistView(bytes);
-    double sumSquares = 0;
-    var count = 0;
-    for (var offset = 44; offset + 1 < bytes.length; offset += 2) {
-      final sample = data.getInt16(offset, Endian.little);
-      sumSquares += sample * sample;
-      count += 1;
-    }
-    if (count == 0) return 0;
-    return math.sqrt(sumSquares / count);
   }
 
   Future<void> _startCall() async {

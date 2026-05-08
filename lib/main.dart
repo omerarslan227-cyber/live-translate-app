@@ -1105,9 +1105,14 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
     try {
       final permission = await Permission.microphone.request();
       if (!permission.isGranted) {
-        _setResult('Mikrofon izni', 'Başarısız: ${permission.name}');
+        final message =
+            permission.isPermanentlyDenied || permission.isRestricted
+            ? 'Başarısız: iOS Ayarlar > BridgeCall > Mikrofon açılmalı'
+            : 'Başarısız: ${permission.name}';
+        _setResult('Mikrofon izni', message);
         setState(
-          () => _summary = 'Mikrofon izni olmadan sesli çeviri çalışmaz.',
+          () => _summary =
+              'Mikrofon izni olmadan sesli çeviri çalışmaz. iPhone Ayarlar uygulamasından BridgeCall mikrofon iznini aç.',
         );
         return;
       }
@@ -2105,7 +2110,10 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     if (requested.isGranted) return true;
 
     if (mounted) {
-      setState(() => statusText = 'Mikrofon izni gerekli');
+      final message = requested.isPermanentlyDenied || requested.isRestricted
+          ? 'Ayarlar > BridgeCall > Mikrofon iznini aç'
+          : 'Mikrofon izni gerekli';
+      setState(() => statusText = message);
     }
     return false;
   }

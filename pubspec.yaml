@@ -2,7 +2,7 @@ name: live_translate_app
 description: "BridgeCall - live video call translation with real-time subtitles."
 publish_to: 'none'
 
-version: 1.0.1+4
+version: 1.0.1+5
 environment:
   sdk: ^3.11.4
 

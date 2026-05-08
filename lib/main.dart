@@ -1065,11 +1065,18 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
   }
 
   Future<void> _prepare() async {
-    await _diagnosticRecorder.openRecorder();
-    await _diagnosticTts.setSpeechRate(0.46);
-    await _diagnosticTts.setVolume(1.0);
-    await _diagnosticTts.setPitch(1.0);
-    if (mounted) setState(() => _recorderReady = true);
+    try {
+      if (!_recorderReady) {
+        await _diagnosticRecorder.openRecorder();
+      }
+      await _diagnosticTts.setSpeechRate(0.46);
+      await _diagnosticTts.setVolume(1.0);
+      await _diagnosticTts.setPitch(1.0);
+      if (mounted) setState(() => _recorderReady = true);
+    } catch (e) {
+      debugPrint('[BridgeCallVoiceDiag] Recorder prepare failed: $e');
+      if (mounted) setState(() => _recorderReady = false);
+    }
   }
 
   @override
@@ -1103,20 +1110,8 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
 
     final started = DateTime.now();
     try {
-      final permission = await Permission.microphone.request();
-      if (!permission.isGranted) {
-        final message =
-            permission.isPermanentlyDenied || permission.isRestricted
-            ? 'Başarısız: iOS Ayarlar > BridgeCall > Mikrofon açılmalı'
-            : 'Başarısız: ${permission.name}';
-        _setResult('Mikrofon izni', message);
-        setState(
-          () => _summary =
-              'Mikrofon izni olmadan sesli çeviri çalışmaz. iPhone Ayarlar uygulamasından BridgeCall mikrofon iznini aç.',
-        );
-        return;
-      }
-      _setResult('Mikrofon izni', 'Başarılı');
+      final permissionReady = await _requestMicrophoneForDiagnostics();
+      if (!permissionReady) return;
 
       final health = await _fetchBackendHealth();
       _setResult(
@@ -1129,6 +1124,14 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
 
       if (!_recorderReady) {
         await _prepare();
+      }
+      if (!_recorderReady) {
+        _setResult('Kayıt', 'Başarısız: recorder açılamadı');
+        setState(
+          () => _summary =
+              'Mikrofon izni açık görünüyor ama kayıt motoru başlatılamadı. Uygulamayı tamamen kapatıp yeni build ile tekrar dene.',
+        );
+        return;
       }
 
       final path = await _diagnosticPath();
@@ -1216,6 +1219,64 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
   Future<String> _diagnosticPath() async {
     final dir = await getTemporaryDirectory();
     return '${dir.path}/bridgecall_voice_diagnostic.wav';
+  }
+
+  Future<bool> _requestMicrophoneForDiagnostics() async {
+    final status = await Permission.microphone.status;
+    debugPrint(
+      '[BridgeCallVoiceDiag] Microphone permission status: ${status.name}',
+    );
+    if (status.isGranted) {
+      _setResult('Mikrofon izni', 'Başarılı');
+      return true;
+    }
+
+    final requested = await Permission.microphone.request();
+    debugPrint(
+      '[BridgeCallVoiceDiag] Microphone permission requested: ${requested.name}',
+    );
+    if (requested.isGranted) {
+      _setResult('Mikrofon izni', 'Başarılı');
+      return true;
+    }
+
+    final probed = await _probeMicrophoneAccess();
+    if (probed) {
+      _setResult('Mikrofon izni', 'Başarılı: iOS ayarı açık, WebRTC doğruladı');
+      return true;
+    }
+
+    final message = requested.isPermanentlyDenied || requested.isRestricted
+        ? 'Başarısız: iOS Ayarlar > BridgeCall > Mikrofon açılmalı'
+        : 'Başarısız: ${requested.name}';
+    _setResult('Mikrofon izni', message);
+    setState(
+      () => _summary =
+          'Mikrofon izni açık görünse bile uygulama gerçek mikrofon erişimi alamadı. Uygulamayı kapatıp aç veya yeni buildi tekrar kur.',
+    );
+    return false;
+  }
+
+  Future<bool> _probeMicrophoneAccess() async {
+    MediaStream? stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        'audio': {
+          'echoCancellation': true,
+          'noiseSuppression': true,
+          'autoGainControl': true,
+        },
+        'video': false,
+      });
+      return stream.getAudioTracks().isNotEmpty;
+    } catch (e) {
+      debugPrint('[BridgeCallVoiceDiag] Microphone probe failed: $e');
+      return false;
+    } finally {
+      for (final track in stream?.getTracks() ?? <MediaStreamTrack>[]) {
+        await track.stop();
+      }
+    }
   }
 
   Future<Map<String, dynamic>?> _fetchBackendHealth() async {
@@ -2109,6 +2170,15 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     _voiceLog('Microphone permission requested', {'status': requested.name});
     if (requested.isGranted) return true;
 
+    final probed = await _probeMicrophoneAccess();
+    if (probed) {
+      _voiceLog('Microphone permission fallback passed', {
+        'permissionHandlerStatus': requested.name,
+        'probe': 'webrtc_getUserMedia',
+      });
+      return true;
+    }
+
     if (mounted) {
       final message = requested.isPermanentlyDenied || requested.isRestricted
           ? 'Ayarlar > BridgeCall > Mikrofon iznini aç'
@@ -2116,6 +2186,30 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       setState(() => statusText = message);
     }
     return false;
+  }
+
+  Future<bool> _probeMicrophoneAccess() async {
+    MediaStream? stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        'audio': {
+          'echoCancellation': true,
+          'noiseSuppression': true,
+          'autoGainControl': true,
+        },
+        'video': false,
+      });
+      final hasAudio = stream.getAudioTracks().isNotEmpty;
+      _voiceLog('Microphone probe result', {'hasAudioTrack': hasAudio});
+      return hasAudio;
+    } catch (e) {
+      _voiceLog('Microphone probe failed', {'error': e.toString()});
+      return false;
+    } finally {
+      for (final track in stream?.getTracks() ?? <MediaStreamTrack>[]) {
+        await track.stop();
+      }
+    }
   }
 
   Future<void> _configureTts() async {

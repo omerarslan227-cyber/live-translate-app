@@ -26,6 +26,31 @@ void main() {
   runApp(const LiveTranslateApp());
 }
 
+Future<void> configureLoudTts(FlutterTts tts) async {
+  await tts.setVolume(1.0);
+  await tts.setPitch(1.0);
+  await tts.setSpeechRate(0.50);
+
+  if (!Platform.isIOS) return;
+
+  try {
+    await tts.setSharedInstance(true);
+    await tts.autoStopSharedSession(false);
+    await tts.setIosAudioCategory(
+      IosTextToSpeechAudioCategory.playAndRecord,
+      [
+        IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
+        IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+        IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+        IosTextToSpeechAudioCategoryOptions.mixWithOthers,
+      ],
+      IosTextToSpeechAudioMode.voicePrompt,
+    );
+  } catch (e) {
+    debugPrint('[BridgeCallVoice] iOS loud TTS configuration failed: $e');
+  }
+}
+
 class LiveTranslateApp extends StatelessWidget {
   const LiveTranslateApp({super.key});
 
@@ -1069,9 +1094,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
       if (!_recorderReady) {
         await _diagnosticRecorder.openRecorder();
       }
-      await _diagnosticTts.setSpeechRate(0.46);
-      await _diagnosticTts.setVolume(1.0);
-      await _diagnosticTts.setPitch(1.0);
+      await configureLoudTts(_diagnosticTts);
       if (mounted) setState(() => _recorderReady = true);
     } catch (e) {
       debugPrint('[BridgeCallVoiceDiag] Recorder prepare failed: $e');
@@ -2250,9 +2273,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _configureTts() async {
-    await _tts.setVolume(1.0);
-    await _tts.setPitch(1.0);
-    await _tts.setSpeechRate(0.46);
+    await configureLoudTts(_tts);
     await _tts.awaitSpeakCompletion(false);
     _tts.setStartHandler(() {
       _voiceLog('Playback started');
@@ -2727,6 +2748,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     final cleanText = text.trim();
     if (cleanText.isEmpty) return;
     try {
+      await configureLoudTts(_tts);
       await _tts.setLanguage(_ttsLanguageCode(backendLang));
       _voiceLog('TTS result', {
         'textLength': cleanText.length,

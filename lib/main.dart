@@ -2629,7 +2629,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       enableNoiseSuppression: true,
       enableEchoCancellation: true,
     );
-    await Future.delayed(const Duration(milliseconds: 1300));
+    await Future.delayed(const Duration(milliseconds: 850));
     return _recorder.stopRecorder();
   }
 

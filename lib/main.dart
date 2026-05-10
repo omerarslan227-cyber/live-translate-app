@@ -1245,7 +1245,10 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
       _setResult('Toplam süre', '${response['timingMs'] ?? '-'}');
 
       if (translated.isNotEmpty) {
+        await _diagnosticRecorder.closeRecorder();
+        _recorderReady = false;
         await configureSpeakerTts(_diagnosticTts);
+        await _diagnosticTts.awaitSpeakCompletion(true);
         await _diagnosticTts.setLanguage('en-US');
         await _diagnosticTts.speak(translated);
         _setResult('TTS', 'Başarılı: cihaz TTS başlatıldı');
@@ -2770,14 +2773,26 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     final cleanText = text.trim();
     if (cleanText.isEmpty) return;
     try {
+      final shouldResumeSubtitles = isRecording && subtitlesOn;
+      if (shouldResumeSubtitles) {
+        await _stopSubtitleRecording();
+        await Future.delayed(const Duration(milliseconds: 120));
+      }
       await configureSpeakerTts(_tts);
+      await _tts.awaitSpeakCompletion(true);
       await _tts.setLanguage(_ttsLanguageCode(backendLang));
       _voiceLog('TTS result', {
         'textLength': cleanText.length,
         'language': backendLang,
+        'pausedRecorderForSpeaker': shouldResumeSubtitles,
       });
       await _tts.speak(cleanText);
+      await _tts.awaitSpeakCompletion(false);
+      if (shouldResumeSubtitles && mounted && subtitlesOn) {
+        unawaited(_startSubtitleRecording());
+      }
     } catch (e) {
+      await _tts.awaitSpeakCompletion(false);
       _voiceLog('TTS error', {'error': e.toString()});
     }
   }

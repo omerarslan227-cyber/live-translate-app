@@ -2119,6 +2119,12 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   bool _recorderReady = false;
   bool _isSpeakingTranslated = false;
   int _silentSubtitleChunks = 0;
+  int? _lastAudioRms;
+  int? _lastAudioBytes;
+  int? _lastSttMs;
+  int? _lastTranslationMs;
+  int? _lastTotalMs;
+  DateTime? _lastVoiceResultAt;
 
   String partialSubtitleText = '';
   String finalSubtitleText = '';
@@ -2469,6 +2475,9 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           final data = jsonDecode(message);
           final timing = data['timingMs'];
           if (timing is Map) {
+            _lastSttMs = _intFromJson(timing['stt']);
+            _lastTranslationMs = _intFromJson(timing['translation']);
+            _lastTotalMs = _intFromJson(timing['total']);
             _voiceLog('Backend response time', {
               'timingMs': timing,
               'audioBytes': data['audioBytes'],
@@ -2477,6 +2486,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           }
           if (mounted && data['noSpeech'] == true) {
             _silentSubtitleChunks += 1;
+            _lastVoiceResultAt = DateTime.now();
             _voiceLog('STT no speech', {
               'silentChunks': _silentSubtitleChunks,
               'audioBytes': data['audioBytes'],
@@ -2488,6 +2498,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           }
           if (mounted && data['translated'] != null) {
             _silentSubtitleChunks = 0;
+            _lastVoiceResultAt = DateTime.now();
             final stage = (data['stage'] ?? 'partial').toString();
             final original = (data['original'] ?? '').toString().trim();
             final translated = (data['translated'] ?? '').toString().trim();
@@ -2577,6 +2588,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           if (await file.exists()) {
             final fileBytes = await file.readAsBytes();
             final rms = calculateWavRms(fileBytes);
+            _lastAudioBytes = fileBytes.length;
+            _lastAudioRms = rms.round();
             _voiceLog('Audio recorded', {
               'recorded': true,
               'bytes': fileBytes.length,
@@ -2671,6 +2684,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       if (!await file.exists()) return false;
       final fileBytes = await file.readAsBytes();
       final rms = calculateWavRms(fileBytes);
+      _lastAudioBytes = fileBytes.length;
+      _lastAudioRms = rms.round();
       _voiceLog('Audio recorded after recorder retry', {
         'recorded': true,
         'bytes': fileBytes.length,
@@ -3114,6 +3129,140 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           ? 'Görüşme devam ediyor'
           : 'Karşı taraf bekleniyor';
     return text;
+  }
+
+  int? _intFromJson(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.round();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  Color get _voiceHealthColor {
+    if (!_microphonePermissionGranted || !_recorderReady)
+      return Colors.redAccent;
+    final rms = _lastAudioRms;
+    if (rms != null && rms < 420) return AppColors.yellow;
+    final total = _lastTotalMs;
+    if (total != null && total > 3500) return AppColors.yellow;
+    if (_silentSubtitleChunks >= 3) return AppColors.yellow;
+    return AppColors.green;
+  }
+
+  IconData get _voiceHealthIcon {
+    if (!_microphonePermissionGranted || !_recorderReady) {
+      return Icons.mic_off_rounded;
+    }
+    if (_isSpeakingTranslated) return Icons.volume_up_rounded;
+    if (isRecording) return Icons.graphic_eq_rounded;
+    return Icons.hearing_rounded;
+  }
+
+  String get _voiceHealthTitle {
+    if (!_microphonePermissionGranted) return 'Mikrofon izni yok';
+    if (!_recorderReady) return 'Kayıt motoru bekliyor';
+    if (_isSpeakingTranslated) return 'Çeviri sesi oynuyor';
+    if (_silentSubtitleChunks >= 3) return 'Konuşma bekleniyor';
+    final rms = _lastAudioRms;
+    if (rms != null && rms < 420) return 'Ses seviyesi düşük';
+    final total = _lastTotalMs;
+    if (total != null && total > 3500) return 'Backend yavaş';
+    if (isRecording) return 'Canlı çeviri aktif';
+    return 'Ses sistemi hazır';
+  }
+
+  String get _voiceHealthDetail {
+    final parts = <String>[];
+    if (_lastAudioRms != null) parts.add('RMS $_lastAudioRms');
+    if (_lastAudioBytes != null)
+      parts.add('${(_lastAudioBytes! / 1024).round()}KB');
+    if (_lastSttMs != null) parts.add('STT ${_lastSttMs}ms');
+    if (_lastTranslationMs != null) parts.add('Çeviri ${_lastTranslationMs}ms');
+    if (_lastTotalMs != null) parts.add('Toplam ${_lastTotalMs}ms');
+    if (parts.isEmpty) return _displayStatus;
+    return parts.join(' • ');
+  }
+
+  Widget _buildVoiceStatusPanel(bool compact) {
+    final color = _voiceHealthColor;
+    final secondsAgo = _lastVoiceResultAt == null
+        ? null
+        : DateTime.now().difference(_lastVoiceResultAt!).inSeconds;
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.42),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withOpacity(0.35)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: compact ? 34 : 38,
+            height: compact ? 34 : 38,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.18),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              _voiceHealthIcon,
+              color: color,
+              size: compact ? 19 : 21,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        _voiceHealthTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: compact ? 13 : 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    if (secondsAgo != null) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        '${secondsAgo}s',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.46),
+                          fontSize: compact ? 11 : 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  _voiceHealthDetail,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.66),
+                    fontSize: compact ? 11 : 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   bool get remoteReadyForUi => _remoteRenderer.srcObject != null;
@@ -3734,15 +3883,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             left: horizontal,
             right: horizontal + 72,
             bottom: _showChat ? 408 + bottomInset : 352,
-            child: Text(
-              _displayStatus,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: const Color(0xFFD7C8FF),
-                fontSize: compact ? 13 : 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            child: _buildVoiceStatusPanel(compact),
           ),
           Positioned(
             right: horizontal,

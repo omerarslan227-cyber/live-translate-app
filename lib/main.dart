@@ -62,7 +62,7 @@ Future<void> _configureTtsAudio(
               IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
             ],
       speakerPlayback
-          ? IosTextToSpeechAudioMode.spokenAudio
+          ? IosTextToSpeechAudioMode.moviePlayback
           : IosTextToSpeechAudioMode.voiceChat,
     );
   } catch (e) {
@@ -1247,6 +1247,8 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
       if (translated.isNotEmpty) {
         await _diagnosticRecorder.closeRecorder();
         _recorderReady = false;
+        await Future.delayed(const Duration(milliseconds: 350));
+        await _diagnosticTts.stop();
         await configureSpeakerTts(_diagnosticTts);
         await _diagnosticTts.awaitSpeakCompletion(true);
         await _diagnosticTts.setLanguage('en-US');

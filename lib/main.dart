@@ -26,7 +26,18 @@ void main() {
   runApp(const LiveTranslateApp());
 }
 
-Future<void> configureLoudTts(FlutterTts tts) async {
+Future<void> configureCallTts(FlutterTts tts) async {
+  await _configureTtsAudio(tts, speakerPlayback: false);
+}
+
+Future<void> configureSpeakerTts(FlutterTts tts) async {
+  await _configureTtsAudio(tts, speakerPlayback: true);
+}
+
+Future<void> _configureTtsAudio(
+  FlutterTts tts, {
+  required bool speakerPlayback,
+}) async {
   await tts.setVolume(1.0);
   await tts.setPitch(1.0);
   await tts.setSpeechRate(0.50);
@@ -37,17 +48,25 @@ Future<void> configureLoudTts(FlutterTts tts) async {
     await tts.setSharedInstance(true);
     await tts.autoStopSharedSession(false);
     await tts.setIosAudioCategory(
-      IosTextToSpeechAudioCategory.playAndRecord,
-      [
-        IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
-        IosTextToSpeechAudioCategoryOptions.allowBluetooth,
-        IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
-        IosTextToSpeechAudioCategoryOptions.mixWithOthers,
-      ],
-      IosTextToSpeechAudioMode.voicePrompt,
+      speakerPlayback
+          ? IosTextToSpeechAudioCategory.playback
+          : IosTextToSpeechAudioCategory.playAndRecord,
+      speakerPlayback
+          ? [
+              IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+              IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+            ]
+          : [
+              IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
+              IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+              IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+            ],
+      speakerPlayback
+          ? IosTextToSpeechAudioMode.spokenAudio
+          : IosTextToSpeechAudioMode.voiceChat,
     );
   } catch (e) {
-    debugPrint('[BridgeCallVoice] iOS loud TTS configuration failed: $e');
+    debugPrint('[BridgeCallVoice] iOS TTS audio configuration failed: $e');
   }
 }
 
@@ -1094,7 +1113,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
       if (!_recorderReady) {
         await _diagnosticRecorder.openRecorder();
       }
-      await configureLoudTts(_diagnosticTts);
+      await configureCallTts(_diagnosticTts);
       if (mounted) setState(() => _recorderReady = true);
     } catch (e) {
       debugPrint('[BridgeCallVoiceDiag] Recorder prepare failed: $e');
@@ -1226,6 +1245,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
       _setResult('Toplam süre', '${response['timingMs'] ?? '-'}');
 
       if (translated.isNotEmpty) {
+        await configureSpeakerTts(_diagnosticTts);
         await _diagnosticTts.setLanguage('en-US');
         await _diagnosticTts.speak(translated);
         _setResult('TTS', 'Başarılı: cihaz TTS başlatıldı');
@@ -2273,7 +2293,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _configureTts() async {
-    await configureLoudTts(_tts);
+    await configureCallTts(_tts);
     await _tts.awaitSpeakCompletion(false);
     _tts.setStartHandler(() {
       _voiceLog('Playback started');
@@ -2281,10 +2301,12 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     });
     _tts.setCompletionHandler(() {
       _voiceLog('Playback ended');
+      unawaited(configureCallTts(_tts));
       if (mounted) setState(() => _isSpeakingTranslated = false);
     });
     _tts.setErrorHandler((message) {
       _voiceLog('TTS error', {'message': message});
+      unawaited(configureCallTts(_tts));
       if (mounted) setState(() => _isSpeakingTranslated = false);
     });
   }
@@ -2748,7 +2770,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     final cleanText = text.trim();
     if (cleanText.isEmpty) return;
     try {
-      await configureLoudTts(_tts);
+      await configureSpeakerTts(_tts);
       await _tts.setLanguage(_ttsLanguageCode(backendLang));
       _voiceLog('TTS result', {
         'textLength': cleanText.length,

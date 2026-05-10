@@ -2669,7 +2669,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       enableNoiseSuppression: true,
       enableEchoCancellation: true,
     );
-    await Future.delayed(const Duration(milliseconds: 850));
+    await Future.delayed(const Duration(milliseconds: 700));
     return _recorder.stopRecorder();
   }
 
@@ -3181,6 +3181,13 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     if (_lastTotalMs != null) parts.add('Toplam ${_lastTotalMs}ms');
     if (parts.isEmpty) return _displayStatus;
     return parts.join(' • ');
+  }
+
+  double get _voiceWaveLevel {
+    final rms = (_lastAudioRms ?? 0).toDouble();
+    if (!isRecording && !_isSpeakingTranslated) return 0.18;
+    if (rms <= 0) return isRecording ? 0.35 : 0.18;
+    return (rms / 1600).clamp(0.22, 1.0);
   }
 
   Widget _buildVoiceStatusPanel(bool compact) {
@@ -3876,6 +3883,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               builder: (context, _) => _WaveBar(
                 animation: _waveController,
                 active: isRecording || subtitlesOn,
+                level: _voiceWaveLevel,
               ),
             ),
           ),
@@ -4223,8 +4231,13 @@ class _TopRoundButton extends StatelessWidget {
 class _WaveBar extends StatelessWidget {
   final Animation<double> animation;
   final bool active;
+  final double level;
 
-  const _WaveBar({required this.animation, required this.active});
+  const _WaveBar({
+    required this.animation,
+    required this.active,
+    required this.level,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -4253,25 +4266,29 @@ class _WaveBar extends StatelessWidget {
           children: List.generate(baseHeights.length, (index) {
             final progress = (animation.value + (index * 0.07)) % 1.0;
             final pulse = progress < 0.5 ? progress * 2 : (1 - progress) * 2;
+            final voiceBoost = active ? level.clamp(0.18, 1.0) : 0.18;
             final dynamicHeight =
-                baseHeights[index] +
-                ((active ? 1.0 : 0.35) * (8 + (pulse * 12)));
+                baseHeights[index] + ((0.25 + voiceBoost) * (6 + (pulse * 18)));
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: 5,
-              height: dynamicHeight.clamp(6.0, 42.0),
+              width: active ? 6 : 5,
+              height: dynamicHeight.clamp(6.0, 52.0),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFB37CFF), Color(0xFF7A3DFF)],
+                gradient: LinearGradient(
+                  colors: active
+                      ? const [Color(0xFF7DD3FC), Color(0xFF8B5CF6)]
+                      : const [Color(0xFFB37CFF), Color(0xFF7A3DFF)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.purple.withOpacity(active ? 0.55 : 0.22),
-                    blurRadius: active ? 14 : 8,
-                    spreadRadius: active ? 0.5 : 0,
+                    color: AppColors.purple.withOpacity(
+                      active ? 0.22 + (voiceBoost * 0.42) : 0.18,
+                    ),
+                    blurRadius: active ? 10 + (voiceBoost * 14) : 8,
+                    spreadRadius: active ? voiceBoost : 0,
                   ),
                 ],
               ),

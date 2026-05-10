@@ -2124,7 +2124,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   int? _lastSttMs;
   int? _lastTranslationMs;
   int? _lastTotalMs;
-  DateTime? _lastVoiceResultAt;
 
   String partialSubtitleText = '';
   String finalSubtitleText = '';
@@ -2486,7 +2485,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           }
           if (mounted && data['noSpeech'] == true) {
             _silentSubtitleChunks += 1;
-            _lastVoiceResultAt = DateTime.now();
             _voiceLog('STT no speech', {
               'silentChunks': _silentSubtitleChunks,
               'audioBytes': data['audioBytes'],
@@ -2498,7 +2496,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           }
           if (mounted && data['translated'] != null) {
             _silentSubtitleChunks = 0;
-            _lastVoiceResultAt = DateTime.now();
             final stage = (data['stage'] ?? 'partial').toString();
             final original = (data['original'] ?? '').toString().trim();
             final translated = (data['translated'] ?? '').toString().trim();
@@ -3192,79 +3189,76 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
   Widget _buildVoiceStatusPanel(bool compact) {
     final color = _voiceHealthColor;
-    final secondsAgo = _lastVoiceResultAt == null
-        ? null
-        : DateTime.now().difference(_lastVoiceResultAt!).inSeconds;
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 14,
-        vertical: compact ? 10 : 12,
+        horizontal: compact ? 10 : 12,
+        vertical: compact ? 8 : 10,
       ),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.42),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withOpacity(0.35)),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.08),
+            color.withOpacity(0.12),
+            Colors.black.withOpacity(0.10),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.26)),
       ),
       child: Row(
         children: [
           Container(
-            width: compact ? 34 : 38,
-            height: compact ? 34 : 38,
+            width: compact ? 30 : 34,
+            height: compact ? 30 : 34,
             decoration: BoxDecoration(
               color: color.withOpacity(0.18),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(11),
             ),
             child: Icon(
               _voiceHealthIcon,
               color: color,
-              size: compact ? 19 : 21,
+              size: compact ? 17 : 19,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 9),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        _voiceHealthTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: compact ? 13 : 14,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    if (secondsAgo != null) ...[
-                      const SizedBox(width: 8),
-                      Text(
-                        '${secondsAgo}s',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.46),
-                          fontSize: compact ? 11 : 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ],
+                Text(
+                  _voiceHealthTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: compact ? 12 : 13,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Text(
                   _voiceHealthDetail,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.66),
-                    fontSize: compact ? 11 : 12,
+                    fontSize: compact ? 10 : 11,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: compact ? 54 : 64,
+            height: compact ? 24 : 28,
+            child: _WaveBar(
+              animation: _waveController,
+              active: isRecording || _isSpeakingTranslated,
+              level: _voiceWaveLevel,
+              dense: true,
             ),
           ),
         ],
@@ -3555,28 +3549,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                       bottom: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.40),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: const Text(
-                          'Sen',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 8,
-                      bottom: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 6,
                         ),
@@ -3673,6 +3645,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildVoiceStatusPanel(compact),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Text(
@@ -3873,25 +3847,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                 ],
               ),
             ),
-          ),
-          Positioned(
-            left: horizontal,
-            right: horizontal + 72,
-            bottom: _showChat ? 446 + bottomInset : 390,
-            child: AnimatedBuilder(
-              animation: _waveController,
-              builder: (context, _) => _WaveBar(
-                animation: _waveController,
-                active: isRecording || subtitlesOn,
-                level: _voiceWaveLevel,
-              ),
-            ),
-          ),
-          Positioned(
-            left: horizontal,
-            right: horizontal + 72,
-            bottom: _showChat ? 408 + bottomInset : 352,
-            child: _buildVoiceStatusPanel(compact),
           ),
           Positioned(
             right: horizontal,
@@ -4232,31 +4187,23 @@ class _WaveBar extends StatelessWidget {
   final Animation<double> animation;
   final bool active;
   final double level;
+  final bool dense;
 
   const _WaveBar({
     required this.animation,
     required this.active,
     required this.level,
+    this.dense = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final List<double> baseHeights = [
-      6,
-      10,
-      18,
-      28,
-      20,
-      36,
-      24,
-      12,
-      30,
-      22,
-      14,
-      26,
-      16,
-      8,
-    ].map((e) => e.toDouble()).toList();
+    final List<double> baseHeights =
+        (dense
+                ? [4, 8, 13, 18, 12, 22, 15, 8, 17, 13]
+                : [6, 10, 18, 28, 20, 36, 24, 12, 30, 22, 14, 26, 16, 8])
+            .map((e) => e.toDouble())
+            .toList();
 
     return AnimatedBuilder(
       animation: animation,
@@ -4268,11 +4215,16 @@ class _WaveBar extends StatelessWidget {
             final pulse = progress < 0.5 ? progress * 2 : (1 - progress) * 2;
             final voiceBoost = active ? level.clamp(0.18, 1.0) : 0.18;
             final dynamicHeight =
-                baseHeights[index] + ((0.25 + voiceBoost) * (6 + (pulse * 18)));
+                baseHeights[index] +
+                ((0.25 + voiceBoost) *
+                    (dense ? 3 + (pulse * 8) : 6 + (pulse * 18)));
             return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: active ? 6 : 5,
-              height: dynamicHeight.clamp(6.0, 52.0),
+              margin: EdgeInsets.symmetric(horizontal: dense ? 1.5 : 3),
+              width: dense ? 3.5 : (active ? 6 : 5),
+              height: dynamicHeight.clamp(
+                dense ? 4.0 : 6.0,
+                dense ? 28.0 : 52.0,
+              ),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
                 gradient: LinearGradient(

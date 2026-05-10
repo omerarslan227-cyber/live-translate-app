@@ -1177,7 +1177,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
       }
 
       final path = await _diagnosticPath();
-      _setResult('Kayıt', '3 saniye konuş...');
+      _setResult('Kayıt', '2 saniye konuş...');
       await _diagnosticRecorder.startRecorder(
         toFile: path,
         codec: Codec.pcm16WAV,
@@ -1188,7 +1188,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
         enableNoiseSuppression: true,
         enableEchoCancellation: true,
       );
-      await Future.delayed(const Duration(seconds: 3));
+      await Future.delayed(const Duration(seconds: 2));
       final savedPath = await _diagnosticRecorder.stopRecorder();
       if (savedPath == null) {
         _setResult('Kayıt', 'Başarısız: dosya yolu boş');
@@ -1411,7 +1411,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
                   label: Text(
                     _running
                         ? 'Test çalışıyor'
-                        : '3 Saniyelik Ses Testi Başlat',
+                        : '2 Saniyelik Ses Testi Başlat',
                   ),
                 ),
               ],

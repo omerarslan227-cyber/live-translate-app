@@ -1,5 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'revenuecat_service.dart';
+
 class UsageSnapshot {
   final bool isPro;
   final int usedSeconds;
@@ -26,13 +28,13 @@ class UsageService {
   static const int freeDailySeconds = 180;
   static const _dateKey = 'usage_date_v1';
   static const _secondsKey = 'usage_seconds_v1';
-  static const _proKey = 'subscription_pro_v1';
 
   static Future<UsageSnapshot> snapshot() async {
     final prefs = await SharedPreferences.getInstance();
     await _resetIfNewDay(prefs);
+    final isPro = await RevenueCatService.hasProEntitlement();
     return UsageSnapshot(
-      isPro: prefs.getBool(_proKey) ?? false,
+      isPro: isPro,
       usedSeconds: prefs.getInt(_secondsKey) ?? 0,
       freeLimitSeconds: freeDailySeconds,
     );
@@ -44,14 +46,9 @@ class UsageService {
     if (seconds <= 0) return;
     final prefs = await SharedPreferences.getInstance();
     await _resetIfNewDay(prefs);
-    if (prefs.getBool(_proKey) ?? false) return;
+    if (await RevenueCatService.hasProEntitlement()) return;
     final current = prefs.getInt(_secondsKey) ?? 0;
     await prefs.setInt(_secondsKey, current + seconds);
-  }
-
-  static Future<void> setDebugPro(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_proKey, value);
   }
 
   static Future<void> _resetIfNewDay(SharedPreferences prefs) async {

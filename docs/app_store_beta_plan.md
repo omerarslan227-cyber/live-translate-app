@@ -41,8 +41,9 @@ Current prepared flows:
 
 ## Remaining App Store Work
 
-1. Add real RevenueCat keys and App Store product ids.
-2. Add privacy policy URL in app metadata and Settings/Profile screen.
-3. Add native rating prompt package or platform channel.
-4. Produce clean iPhone screenshots from the demo flow.
-5. Run real two-device call tests before TestFlight.
+1. Create RevenueCat project, products, offering, and entitlement `pro`.
+2. Build with `--dart-define=REVENUECAT_IOS_API_KEY=...` and `--dart-define=REVENUECAT_ANDROID_API_KEY=...`.
+3. Add Privacy Policy URL to App Store Connect metadata. Apple requires this URL for submission.
+4. Keep the in-app Privacy Policy link pointing to the same public URL: `https://bridgecall.tech/privacy`.
+5. Produce clean iPhone screenshots from the demo flow.
+6. Run real two-device call tests before TestFlight.

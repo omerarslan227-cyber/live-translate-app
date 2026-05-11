@@ -2,7 +2,7 @@ name: live_translate_app
 description: "BridgeCall - live video call translation with real-time subtitles."
 publish_to: 'none'
 
-version: 1.0.1+16
+version: 1.0.1+17
 environment:
   sdk: ^3.11.4
 
@@ -18,6 +18,9 @@ dependencies:
   share_plus: ^10.0.2
   permission_handler: ^12.0.1
   flutter_tts: ^4.2.5
+  purchases_flutter: ^10.0.2
+  in_app_review: ^2.0.11
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

@@ -1,17 +1,26 @@
-# live_translate_app
+# BridgeCall
 
-A new Flutter project.
+Live video-call translation with low-latency subtitles, spoken translation, and private rooms.
 
-## Getting Started
+## App Store Release Checklist
 
-This project is a starting point for a Flutter application.
+- Configure RevenueCat products and the `pro` entitlement.
+- Build with RevenueCat keys:
+  - `--dart-define=REVENUECAT_IOS_API_KEY=...`
+  - `--dart-define=REVENUECAT_ANDROID_API_KEY=...`
+  - Optional: `--dart-define=REVENUECAT_ENTITLEMENT_ID=pro`
+- Add the required Privacy Policy URL in App Store Connect metadata:
+  - `https://bridgecall.tech/privacy`
+- Verify the in-app Privacy Policy link opens from Profile.
+- Run a two-device iPhone TestFlight call before release.
+- Capture App Store screenshots from onboarding, room creation, live call, captions, and Pro paywall.
 
-A few resources to get you started if this is your first Flutter project:
+## Local Checks
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```bash
+flutter pub get
+flutter test
+flutter analyze lib/main.dart lib/models lib/services lib/screens lib/widgets
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+`flutter analyze` still reports legacy lint/deprecated warnings in the large `main.dart`; these are not new build-breaking errors.

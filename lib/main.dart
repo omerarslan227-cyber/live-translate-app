@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'models/language_option.dart';
@@ -21,6 +22,7 @@ import 'screens/paywall_screen.dart';
 import 'services/growth_service.dart';
 import 'services/onboarding_service.dart';
 import 'services/rating_prompt_service.dart';
+import 'services/revenuecat_service.dart';
 import 'services/reliable_web_socket.dart';
 import 'services/usage_service.dart';
 import 'widgets/connection_status_pill.dart';
@@ -33,6 +35,8 @@ final ValueNotifier<int> appRefresh = ValueNotifier<int>(0);
 void triggerAppRefresh() => appRefresh.value++;
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  unawaited(RevenueCatService.configure());
   runApp(const LiveTranslateApp());
 }
 
@@ -1638,7 +1642,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   value: _target,
                   label: 'Tercih edilen hedef dil',
                   items: languages,
-                  onChanged: (v) => setState(() => _target = v ?? 'Rusça'),
+                  onChanged: (v) => setState(() => _target = v ?? 'İngilizce'),
                 ),
                 const SizedBox(height: 14),
                 SwitchListTile.adaptive(
@@ -1664,26 +1668,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 14),
-          const _GlassCard(
+          _GlassCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Gizlilik ve güvenlik',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 8),
-                Text(
+                const SizedBox(height: 8),
+                const Text(
                   'BridgeCall kamera ve mikrofonu yalnızca görüşme için kullanır. Ses çeviri için güvenli sunucuya gönderilir; gizlilik politikası App Store Connect metadata ve uygulama içinde paylaşılmalıdır.',
                   style: TextStyle(color: Colors.white70, height: 1.35),
                 ),
-                SizedBox(height: 8),
-                SelectableText(
-                  'Privacy Policy: https://bridgecall.tech/privacy',
-                  style: TextStyle(
-                    color: AppColors.blue,
-                    fontWeight: FontWeight.w600,
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => launchUrl(
+                    Uri.parse('https://bridgecall.tech/privacy'),
+                    mode: LaunchMode.externalApplication,
                   ),
+                  icon: const Icon(Icons.privacy_tip_outlined),
+                  label: const Text('Privacy Policy'),
                 ),
               ],
             ),
@@ -2824,12 +2829,16 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       await configureSpeakerTts(_tts);
       await _tts.awaitSpeakCompletion(true);
       await _tts.setLanguage(_ttsLanguageCode(backendLang));
+      final ttsStarted = DateTime.now();
       _voiceLog('TTS result', {
         'textLength': cleanText.length,
         'language': backendLang,
         'pausedRecorderForSpeaker': shouldResumeSubtitles,
       });
       await _tts.speak(cleanText);
+      _voiceLog('TTS playback latency', {
+        'ttsMs': DateTime.now().difference(ttsStarted).inMilliseconds,
+      });
       await _tts.awaitSpeakCompletion(false);
       if (shouldResumeSubtitles && mounted && subtitlesOn) {
         unawaited(_startSubtitleRecording());
@@ -3098,9 +3107,12 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         timestamp: DateTime.now(),
       ),
     );
-    if (durationSeconds >= 20 &&
-        await RatingPromptService.shouldAskAfterSuccessfulCall()) {
-      _voiceLog('Rating prompt ready', {'durationSeconds': durationSeconds});
+    final successfulCall = durationSeconds >= 20 && memberCount >= 2;
+    final prompted = await RatingPromptService.requestReviewIfAppropriate(
+      wasSuccessful: successfulCall,
+    );
+    if (prompted) {
+      _voiceLog('Rating prompt shown', {'durationSeconds': durationSeconds});
     }
   }
 

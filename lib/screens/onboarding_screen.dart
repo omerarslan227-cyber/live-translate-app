@@ -20,7 +20,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   String _target = 'İngilizce';
 
   Future<void> _finish() async {
-    await OnboardingService.markComplete();
+    await OnboardingService.markComplete(
+      sourceLanguage: _source,
+      targetLanguage: _target,
+    );
     if (!mounted) return;
     Navigator.of(
       context,

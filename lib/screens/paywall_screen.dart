@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 
+import '../services/revenuecat_service.dart';
 import '../services/usage_service.dart';
 
 class PaywallScreen extends StatefulWidget {
@@ -11,6 +13,9 @@ class PaywallScreen extends StatefulWidget {
 
 class _PaywallScreenState extends State<PaywallScreen> {
   UsageSnapshot? _usage;
+  List<Package> _packages = const <Package>[];
+  bool _loading = true;
+  String? _message;
 
   @override
   void initState() {
@@ -20,7 +25,42 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
   Future<void> _load() async {
     final usage = await UsageService.snapshot();
-    if (mounted) setState(() => _usage = usage);
+    final packages = await RevenueCatService.availablePackages();
+    if (!mounted) return;
+    setState(() {
+      _usage = usage;
+      _packages = packages;
+      _message = RevenueCatService.lastError;
+      _loading = false;
+    });
+  }
+
+  Future<void> _purchase(Package package) async {
+    setState(() {
+      _loading = true;
+      _message = null;
+    });
+    final result = await RevenueCatService.purchase(package);
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _message = result.message;
+    });
+    if (result.isPro && mounted) Navigator.pop(context, true);
+  }
+
+  Future<void> _restore() async {
+    setState(() {
+      _loading = true;
+      _message = null;
+    });
+    final result = await RevenueCatService.restore();
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+      _message = result.message;
+    });
+    if (result.isPro && mounted) Navigator.pop(context, true);
   }
 
   @override
@@ -58,25 +98,59 @@ class _PaywallScreenState extends State<PaywallScreen> {
             icon: Icons.language_rounded,
             text: 'Büyük pazar dilleri ve hızlı dil değiştirme',
           ),
-          const SizedBox(height: 28),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(56),
-              backgroundColor: const Color(0xFF8B5CF6),
+          const SizedBox(height: 26),
+          if (_loading) const Center(child: CircularProgressIndicator()),
+          if (!_loading && _packages.isEmpty)
+            _PaywallMessage(
+              text:
+                  _message ??
+                  'Abonelik ürünleri yüklenemedi. RevenueCat API key ve App Store ürünlerini kontrol et.',
             ),
-            onPressed: () async {
-              await UsageService.setDebugPro(true);
-              if (context.mounted) Navigator.pop(context, true);
-            },
-            child: const Text('Pro Altyapısını Aktifleştir'),
+          if (!_loading)
+            ..._packages.map(
+              (package) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(56),
+                    backgroundColor: const Color(0xFF8B5CF6),
+                  ),
+                  onPressed: () => _purchase(package),
+                  child: Text(
+                    '${package.storeProduct.title} • ${package.storeProduct.priceString}',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ),
+          TextButton(
+            onPressed: _loading ? null : _restore,
+            child: const Text('Satın alımı geri yükle'),
           ),
-          const SizedBox(height: 10),
-          const Text(
-            'RevenueCat ürünleri App Store Connect tarafında bağlanınca bu buton gerçek abonelik akışına çevrilecek.',
-            style: TextStyle(color: Colors.white54, fontSize: 12),
-          ),
+          if (_message != null && _packages.isNotEmpty)
+            _PaywallMessage(text: _message!),
         ],
       ),
+    );
+  }
+}
+
+class _PaywallMessage extends StatelessWidget {
+  final String text;
+
+  const _PaywallMessage({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Text(text, style: const TextStyle(color: Colors.white70)),
     );
   }
 }

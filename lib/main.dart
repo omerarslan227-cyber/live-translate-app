@@ -15,6 +15,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+import 'models/language_option.dart';
+import 'screens/onboarding_screen.dart';
+import 'screens/paywall_screen.dart';
+import 'services/growth_service.dart';
+import 'services/onboarding_service.dart';
+import 'services/rating_prompt_service.dart';
+import 'services/reliable_web_socket.dart';
+import 'services/usage_service.dart';
+import 'widgets/connection_status_pill.dart';
+
 const String baseWsUrl =
     'wss://live-translate-backed-production.up.railway.app';
 
@@ -88,7 +98,20 @@ class LiveTranslateApp extends StatelessWidget {
           surface: Color(0xFF0B1224),
         ),
       ),
-      home: const HomeShell(),
+      home: FutureBuilder<bool>(
+        future: OnboardingService.isComplete(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          const home = HomeShell();
+          return snapshot.data == true
+              ? home
+              : const OnboardingScreen(next: home);
+        },
+      ),
     );
   }
 }
@@ -181,7 +204,7 @@ class AppStore {
   }
 
   static String inviteLink(String roomName, String code) {
-    return 'https://bridgecall.app/join?room=$roomName&code=$code';
+    return GrowthService.inviteLink(roomName, code);
   }
 }
 
@@ -196,7 +219,7 @@ class ProfileData {
     this.displayName = '',
     this.about = '',
     this.preferredSourceLanguage = 'Türkçe',
-    this.preferredTargetLanguage = 'Rusça',
+    this.preferredTargetLanguage = 'İngilizce',
     this.avatarMode = false,
   });
 
@@ -213,7 +236,7 @@ class ProfileData {
     about: (json['about'] ?? '').toString(),
     preferredSourceLanguage: (json['preferredSourceLanguage'] ?? 'Türkçe')
         .toString(),
-    preferredTargetLanguage: (json['preferredTargetLanguage'] ?? 'Rusça')
+    preferredTargetLanguage: (json['preferredTargetLanguage'] ?? 'İngilizce')
         .toString(),
     avatarMode: json['avatarMode'] == true,
   );
@@ -1529,17 +1552,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _aboutController = TextEditingController();
   String _source = 'Türkçe';
-  String _target = 'Rusça';
+  String _target = 'İngilizce';
   bool _avatarMode = false;
   bool _loading = true;
 
-  final List<String> languages = const [
-    'Türkçe',
-    'Rusça',
-    'Ukraynaca',
-    'İngilizce',
-    'Gürcüce',
-  ];
+  final List<String> languages = bridgeCallLanguageNames;
 
   @override
   void initState() {
@@ -1693,17 +1710,11 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   final TextEditingController codeController = TextEditingController();
 
   String sourceLanguageName = 'Türkçe';
-  String targetLanguageName = 'Rusça';
+  String targetLanguageName = 'İngilizce';
   int selectedCapacity = 2;
   bool showAdvanced = false;
 
-  final List<String> languages = const [
-    'Türkçe',
-    'Rusça',
-    'Ukraynaca',
-    'İngilizce',
-    'Gürcüce',
-  ];
+  final List<String> languages = bridgeCallLanguageNames;
   final List<int> capacities = const [2, 4, 6, 8];
 
   @override
@@ -1722,7 +1733,16 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
     return now.substring(now.length - 6);
   }
 
-  void _openCall() {
+  Future<void> _openCall() async {
+    if (!await UsageService.canStartCall()) {
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const PaywallScreen()),
+      );
+      if (!await UsageService.canStartCall()) return;
+    }
+    if (!mounted) return;
     final roomName = roomController.text.trim().isEmpty
         ? 'oda1'
         : roomController.text.trim();
@@ -1947,7 +1967,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
   final TextEditingController codeController = TextEditingController();
 
   String sourceLanguageName = 'Türkçe';
-  String targetLanguageName = 'Rusça';
+  String targetLanguageName = 'İngilizce';
 
   @override
   void initState() {
@@ -1993,13 +2013,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                 _LanguageDropdown(
                   value: sourceLanguageName,
                   label: 'Benim konuşma dilim',
-                  items: const [
-                    'Türkçe',
-                    'Rusça',
-                    'Ukraynaca',
-                    'İngilizce',
-                    'Gürcüce',
-                  ],
+                  items: bridgeCallLanguageNames,
                   onChanged: (value) =>
                       setState(() => sourceLanguageName = value ?? 'Türkçe'),
                 ),
@@ -2007,15 +2021,9 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                 _LanguageDropdown(
                   value: targetLanguageName,
                   label: 'Dinlemek istediğim dil',
-                  items: const [
-                    'Türkçe',
-                    'Rusça',
-                    'Ukraynaca',
-                    'İngilizce',
-                    'Gürcüce',
-                  ],
+                  items: bridgeCallLanguageNames,
                   onChanged: (value) =>
-                      setState(() => targetLanguageName = value ?? 'Rusça'),
+                      setState(() => targetLanguageName = value ?? 'İngilizce'),
                 ),
                 const SizedBox(height: 18),
                 FilledButton.icon(
@@ -2026,7 +2034,18 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                       borderRadius: BorderRadius.circular(18),
                     ),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
+                    if (!await UsageService.canStartCall()) {
+                      if (!context.mounted) return;
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const PaywallScreen(),
+                        ),
+                      );
+                      if (!await UsageService.canStartCall()) return;
+                    }
+                    if (!context.mounted) return;
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -2104,8 +2123,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
   MediaStream? _localStream;
   RTCPeerConnection? _peerConnection;
-  WebSocketChannel? _signalChannel;
-  WebSocketChannel? _translateChannel;
+  ReliableWebSocketClient? _signalChannel;
+  ReliableWebSocketClient? _translateChannel;
 
   bool micOn = true;
   bool camOn = true;
@@ -2124,6 +2143,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   int? _lastSttMs;
   int? _lastTranslationMs;
   int? _lastTotalMs;
+  BridgeSocketStatus _signalStatus = BridgeSocketStatus.idle;
+  BridgeSocketStatus _translateStatus = BridgeSocketStatus.idle;
 
   String partialSubtitleText = '';
   String finalSubtitleText = '';
@@ -2153,21 +2174,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   late final AnimationController _waveController;
   late final AnimationController _glowController;
 
-  final Map<String, String> sourceLanguages = const {
-    'Türkçe': 'TR',
-    'Rusça': 'RU',
-    'Ukraynaca': 'UK',
-    'İngilizce': 'EN',
-    'Gürcüce': 'KA',
-  };
-
-  final Map<String, String> targetLanguages = const {
-    'Türkçe': 'TR',
-    'Rusça': 'RU',
-    'Ukraynaca': 'UK',
-    'İngilizce': 'EN-US',
-    'Gürcüce': 'KA',
-  };
+  final Map<String, String> sourceLanguages = bridgeCallSourceLanguages;
+  final Map<String, String> targetLanguages = bridgeCallTargetLanguages;
 
   final Map<String, dynamic> _iceConfig = const {
     'iceServers': [
@@ -2420,17 +2428,32 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   Future<void> _connectSignalSocket() async {
     if (_signalChannel != null) return;
 
-    _signalChannel = WebSocketChannel.connect(Uri.parse('$baseWsUrl/signal'));
-
-    _signalChannel!.stream.listen(
-      (message) async => _handleSignal(message),
+    _signalChannel = ReliableWebSocketClient(
+      uri: Uri.parse('$baseWsUrl/signal'),
+      name: 'signal',
+      onMessage: (message) async => _handleSignal(message),
+      onStatus: (status) {
+        if (!mounted) return;
+        setState(() {
+          _signalStatus = status;
+          statusText = 'Signal: ${status.label}';
+        });
+      },
       onError: (error) {
         if (mounted) setState(() => statusText = 'Signal hatası: $error');
       },
-      onDone: () {
-        if (mounted) setState(() => statusText = 'Signal bağlantısı kapandı');
+      onReconnected: () {
+        if (!mounted) return;
+        _sendSignal({
+          'type': widget.isOwner ? 'create_room' : 'request_join',
+          'room': widget.roomName,
+          'capacity': widget.roomCapacity,
+          'privateCode': widget.privateCode,
+        });
+        _sendMediaState();
       },
     );
+    _signalChannel!.connect();
   }
 
   Future<void> _joinRoom() async {
@@ -2465,11 +2488,20 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   void _connectTranslateSocket() {
     if (_translateChannel != null) return;
 
-    _translateChannel = WebSocketChannel.connect(
-      Uri.parse('$baseWsUrl/translate'),
-    );
-    _translateChannel!.stream.listen(
-      (message) {
+    _translateChannel = ReliableWebSocketClient(
+      uri: Uri.parse('$baseWsUrl/translate'),
+      name: 'translate',
+      heartbeatInterval: const Duration(seconds: 20),
+      onStatus: (status) {
+        if (!mounted) return;
+        setState(() {
+          _translateStatus = status;
+          if (status != BridgeSocketStatus.connected) {
+            statusText = 'Çeviri: ${status.label}';
+          }
+        });
+      },
+      onMessage: (message) {
         try {
           final data = jsonDecode(message);
           final timing = data['timingMs'];
@@ -2547,6 +2579,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           setState(() => statusText = 'Çeviri soketi hatası: $error');
       },
     );
+    _translateChannel!.connect();
   }
 
   Future<void> _startSubtitleRecording() async {
@@ -2609,14 +2642,12 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               finalSubtitleText,
               partialSubtitleText,
             ].where((text) => text.trim().isNotEmpty).join(' ');
-            _translateChannel?.sink.add(
-              jsonEncode({
-                'audio': base64Encode(fileBytes),
-                'sourceLang': sourceLanguages[sourceLanguageName],
-                'targetLang': targetLanguages[targetLanguageName],
-                'previousText': contextText,
-              }),
-            );
+            _translateChannel?.sendJson({
+              'audio': base64Encode(fileBytes),
+              'sourceLang': sourceLanguages[sourceLanguageName],
+              'targetLang': targetLanguages[targetLanguageName],
+              'previousText': contextText,
+            });
           } else {
             _voiceLog('Audio recorded', {
               'recorded': false,
@@ -2695,14 +2726,12 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         finalSubtitleText,
         partialSubtitleText,
       ].where((text) => text.trim().isNotEmpty).join(' ');
-      _translateChannel?.sink.add(
-        jsonEncode({
-          'audio': base64Encode(fileBytes),
-          'sourceLang': sourceLanguages[sourceLanguageName],
-          'targetLang': targetLanguages[targetLanguageName],
-          'previousText': contextText,
-        }),
-      );
+      _translateChannel?.sendJson({
+        'audio': base64Encode(fileBytes),
+        'sourceLang': sourceLanguages[sourceLanguageName],
+        'targetLang': targetLanguages[targetLanguageName],
+        'previousText': contextText,
+      });
       return true;
     } catch (e) {
       _voiceLog('Subtitle recorder retry failed', {'error': e.toString()});
@@ -2812,21 +2841,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   }
 
   String _ttsLanguageCode(String? backendLang) {
-    switch ((backendLang ?? '').toUpperCase()) {
-      case 'TR':
-        return 'tr-TR';
-      case 'RU':
-        return 'ru-RU';
-      case 'UK':
-        return 'uk-UA';
-      case 'KA':
-        return 'ka-GE';
-      case 'EN':
-      case 'EN-US':
-        return 'en-US';
-      default:
-        return 'en-US';
-    }
+    return bridgeCallTtsCode(backendLang);
   }
 
   Future<void> _handleSignal(dynamic rawMessage) async {
@@ -3012,7 +3027,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   }
 
   void _sendSignal(Map<String, dynamic> message) {
-    _signalChannel?.sink.add(jsonEncode(message));
+    _signalChannel?.sendJson(message);
   }
 
   Future<void> _sendChatMessage() async {
@@ -3070,6 +3085,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   Future<void> _saveHistoryIfNeeded() async {
     if (_historySaved) return;
     _historySaved = true;
+    final durationSeconds = DateTime.now().difference(_callStart).inSeconds;
+    await UsageService.addCallSeconds(durationSeconds);
     await AppStore.addHistory(
       CallHistoryEntry(
         roomName: widget.roomName,
@@ -3077,10 +3094,14 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         sourceLanguage: sourceLanguageName,
         targetLanguage: targetLanguageName,
         memberCount: memberCount,
-        durationSeconds: DateTime.now().difference(_callStart).inSeconds,
+        durationSeconds: durationSeconds,
         timestamp: DateTime.now(),
       ),
     );
+    if (durationSeconds >= 20 &&
+        await RatingPromptService.shouldAskAfterSuccessfulCall()) {
+      _voiceLog('Rating prompt ready', {'durationSeconds': durationSeconds});
+    }
   }
 
   Future<void> _hangUp() async {
@@ -3099,9 +3120,9 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     _localStream = null;
     _localRenderer.srcObject = null;
 
-    await _signalChannel?.sink.close();
+    await _signalChannel?.close();
     _signalChannel = null;
-    await _translateChannel?.sink.close();
+    await _translateChannel?.close();
     _translateChannel = null;
     await _tts.stop();
 
@@ -3276,8 +3297,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     _glowController.dispose();
     _saveHistoryIfNeeded();
     _stopSubtitleRecording();
-    _signalChannel?.sink.close();
-    _translateChannel?.sink.close();
+    _signalChannel?.close();
+    _translateChannel?.close();
     _peerConnection?.close();
     _tts.stop();
     _localStream?.getTracks().forEach((track) => track.stop());
@@ -3469,6 +3490,15 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          ConnectionStatusPill(status: _signalStatus),
+                          ConnectionStatusPill(status: _translateStatus),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -3490,11 +3520,29 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     _TopRoundButton(
                       icon: Icons.more_horiz_rounded,
                       onTap: () async {
-                        final link = AppStore.inviteLink(
-                          widget.roomName,
-                          widget.privateCode,
+                        final original = [
+                          finalSubtitleText,
+                          remoteFinalOriginalText,
+                        ].where((text) => text.trim().isNotEmpty).join('\n');
+                        final translated = [
+                          finalTranslatedText,
+                          remoteFinalTranslatedText,
+                        ].where((text) => text.trim().isNotEmpty).join('\n');
+                        if (original.isNotEmpty || translated.isNotEmpty) {
+                          await Share.share(
+                            GrowthService.transcriptShareMessage(
+                              original: original,
+                              translated: translated,
+                            ),
+                          );
+                          return;
+                        }
+                        await Share.share(
+                          GrowthService.roomInviteMessage(
+                            widget.roomName,
+                            widget.privateCode,
+                          ),
                         );
-                        await Share.share('BridgeCall odama katıl: $link');
                       },
                     ),
                   ],

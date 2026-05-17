@@ -21,6 +21,27 @@ workflows:
           flutter clean
           flutter pub get
 
+      - name: Validate production environment
+        script: |
+          REQUIRED_VARS=(
+            WS_URL
+            BACKEND_HTTP_URL
+            REVENUECAT_IOS_API_KEY
+            TWILIO_TURN_URLS
+            TWILIO_TURN_USERNAME
+            TWILIO_TURN_PASSWORD
+            TURN_URLS
+            TURN_USERNAME
+            TURN_PASSWORD
+          )
+          for VAR_NAME in "${REQUIRED_VARS[@]}"; do
+            if [ -z "${!VAR_NAME}" ]; then
+              echo "Missing required Codemagic environment variable: $VAR_NAME"
+              echo "Add it to the secure 'bridgecall' environment group before App Store builds."
+              exit 1
+            fi
+          done
+
       - name: Set signing
         script: |
           cd /Users/builder/clone

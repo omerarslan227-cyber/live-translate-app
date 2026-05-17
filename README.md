@@ -47,3 +47,7 @@ Create a secure Codemagic environment group named `bridgecall` and store:
 - `TURN_URLS`
 - `TURN_USERNAME`
 - `TURN_PASSWORD`
+
+The Codemagic workflow validates these variables before the iOS build starts.
+If any TURN variable is missing, the build fails on purpose so production calls
+do not silently fall back to STUN-only mode.

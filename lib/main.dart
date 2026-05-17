@@ -29,6 +29,7 @@ import 'services/reliable_web_socket.dart';
 import 'services/usage_service.dart';
 import 'services/webrtc_config_service.dart';
 import 'widgets/connection_status_pill.dart';
+import 'widgets/glass_card.dart';
 
 final ValueNotifier<int> appRefresh = ValueNotifier<int>(0);
 
@@ -605,7 +606,7 @@ class _StatusStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _GlassCard(
+    return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       child: Row(
         children: [
@@ -637,7 +638,7 @@ class _LastRoomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _GlassCard(
+    return GlassCard(
       child: Row(
         children: [
           Expanded(
@@ -697,7 +698,7 @@ class _DemoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _GlassCard(
+    return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: const [
@@ -782,7 +783,7 @@ class _RecentConversationsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _GlassCard(
+    return GlassCard(
       child: Column(
         children: [
           Row(
@@ -1027,7 +1028,7 @@ class MessagesScreen extends StatelessWidget {
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final item = messages[index];
-                        return _GlassCard(
+                        return GlassCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -1097,7 +1098,7 @@ class HistoryScreen extends StatelessWidget {
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final item = history[index];
-                        return _GlassCard(
+                        return GlassCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -1484,7 +1485,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(18),
         children: [
-          _GlassCard(
+          GlassCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1514,7 +1515,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _GlassCard(
+          GlassCard(
             child: Column(
               children: _results.entries
                   .map(
@@ -1562,7 +1563,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _GlassCard(
+          GlassCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1683,7 +1684,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: ListView(
         padding: const EdgeInsets.all(18),
         children: [
-          _GlassCard(
+          GlassCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1737,7 +1738,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 14),
-          _GlassCard(
+          GlassCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1856,7 +1857,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 6, 18, 24),
         children: [
-          _GlassCard(
+          GlassCard(
             child: Row(
               children: [
                 const Icon(
@@ -1895,7 +1896,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _GlassCard(
+          GlassCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -2072,7 +2073,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
         children: [
-          _GlassCard(
+          GlassCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -4518,7 +4519,7 @@ class _BottomFeature extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _GlassCard(
+    return GlassCard(
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -4677,36 +4678,6 @@ class _ActionButton extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _GlassCard extends StatelessWidget {
-  final Widget child;
-  final EdgeInsetsGeometry padding;
-
-  const _GlassCard({
-    required this.child,
-    this.padding = const EdgeInsets.all(18),
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        color: AppColors.card.withOpacity(0.88),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black38,
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: child,
     );
   }
 }

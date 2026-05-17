@@ -16,6 +16,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+import 'config/app_config.dart';
+import 'core/app_logger.dart';
 import 'models/language_option.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/paywall_screen.dart';
@@ -25,19 +27,43 @@ import 'services/rating_prompt_service.dart';
 import 'services/revenuecat_service.dart';
 import 'services/reliable_web_socket.dart';
 import 'services/usage_service.dart';
+import 'services/webrtc_config_service.dart';
 import 'widgets/connection_status_pill.dart';
-
-const String baseWsUrl =
-    'wss://live-translate-backed-production.up.railway.app';
 
 final ValueNotifier<int> appRefresh = ValueNotifier<int>(0);
 
 void triggerAppRefresh() => appRefresh.value++;
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  unawaited(RevenueCatService.configure());
-  runApp(const LiveTranslateApp());
+  runZonedGuarded(
+    () {
+      WidgetsFlutterBinding.ensureInitialized();
+      FlutterError.onError = (details) {
+        FlutterError.presentError(details);
+        AppLogger.error('flutter', 'framework error', {}, details.exception);
+      };
+      unawaited(_configureStartupServices());
+      runApp(const LiveTranslateApp());
+    },
+    (error, stackTrace) {
+      AppLogger.error('startup', 'unhandled zone error', {}, error, stackTrace);
+      WidgetsFlutterBinding.ensureInitialized();
+      runApp(AppStartupFailed(error: error, stackTrace: stackTrace));
+    },
+  );
+}
+
+Future<void> _configureStartupServices() async {
+  try {
+    final result = await RevenueCatService.configure();
+    if (!result.success) {
+      AppLogger.warn('subscription', 'RevenueCat not ready', {
+        'message': result.message,
+      });
+    }
+  } catch (e, stackTrace) {
+    AppLogger.error('subscription', 'RevenueCat startup failed', {}, e, stackTrace);
+  }
 }
 
 Future<void> configureCallTts(FlutterTts tts) async {
@@ -115,6 +141,43 @@ class LiveTranslateApp extends StatelessWidget {
               ? home
               : const OnboardingScreen(next: home);
         },
+      ),
+    );
+  }
+}
+
+class AppStartupFailed extends StatelessWidget {
+  final Object error;
+  final StackTrace? stackTrace;
+
+  const AppStartupFailed({super.key, required this.error, this.stackTrace});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark(useMaterial3: true),
+      home: Scaffold(
+        backgroundColor: AppColors.bg,
+        body: SafeArea(
+          child: Center(
+            child: Container(
+              margin: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AppColors.red.withValues(alpha: 0.4)),
+              ),
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  'App startup failed:\n$error',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1359,14 +1422,15 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
   }
 
   Future<Map<String, dynamic>?> _fetchBackendHealth() async {
+    final healthUri = AppConfig.healthUri;
+    if (healthUri == null) {
+      _logs.insert(0, 'Backend config eksik: WS_URL verilmedi');
+      return null;
+    }
     final client = HttpClient();
     try {
       final request = await client
-          .getUrl(
-            Uri.parse(
-              'https://live-translate-backed-production.up.railway.app/health',
-            ),
-          )
+          .getUrl(healthUri)
           .timeout(const Duration(seconds: 10));
       final response = await request.close().timeout(
         const Duration(seconds: 10),
@@ -1383,7 +1447,12 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
   }
 
   Future<Map<String, dynamic>?> _sendAudioToBackend(Uint8List bytes) async {
-    final channel = WebSocketChannel.connect(Uri.parse('$baseWsUrl/translate'));
+    final translateUri = AppConfig.wsEndpoint('translate');
+    if (translateUri == null) {
+      _logs.insert(0, 'Backend config eksik: WS_URL verilmedi');
+      return null;
+    }
+    final channel = WebSocketChannel.connect(translateUri);
     try {
       channel.sink.add(
         jsonEncode({
@@ -2176,17 +2245,18 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   String? _reactionEmoji;
   Timer? _reactionTimer;
   Timer? _durationTimer;
+  Timer? _webrtcConnectTimeoutTimer;
+  Timer? _iceReconnectTimer;
   late final AnimationController _waveController;
   late final AnimationController _glowController;
+  bool _iceRestartInProgress = false;
+  int _iceRestartAttempts = 0;
 
   final Map<String, String> sourceLanguages = bridgeCallSourceLanguages;
   final Map<String, String> targetLanguages = bridgeCallTargetLanguages;
 
-  final Map<String, dynamic> _iceConfig = const {
-    'iceServers': [
-      {'urls': 'stun:stun.l.google.com:19302'},
-    ],
-  };
+  final Map<String, dynamic> _iceConfig =
+      WebRtcConfigService.productionIceConfiguration();
 
   @override
   void initState() {
@@ -2386,6 +2456,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
   Future<void> _createPeerConnection() async {
     _peerConnection ??= await createPeerConnection(_iceConfig);
+    _startWebRtcConnectTimeout();
 
     if (_localStream != null) {
       for (final track in _localStream!.getTracks()) {
@@ -2409,6 +2480,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
     _peerConnection!.onIceCandidate = (candidate) {
       if (candidate.candidate != null) {
+        _voiceLog('ICE candidate discovered', {
+          'type': WebRtcConfigService.candidateType(candidate.candidate),
+          'sdpMid': candidate.sdpMid,
+          'sdpMLineIndex': candidate.sdpMLineIndex,
+        });
         _sendSignal({
           'type': 'candidate',
           'room': widget.roomName,
@@ -2421,7 +2497,30 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       }
     };
 
+    _peerConnection!.onIceConnectionState = (state) {
+      _voiceLog('ICE connection state', {'state': state.toString()});
+      if (state == RTCIceConnectionState.RTCIceConnectionStateConnected ||
+          state == RTCIceConnectionState.RTCIceConnectionStateCompleted) {
+        _iceRestartAttempts = 0;
+        _iceReconnectTimer?.cancel();
+        _webrtcConnectTimeoutTimer?.cancel();
+      }
+      if (state == RTCIceConnectionState.RTCIceConnectionStateDisconnected ||
+          state == RTCIceConnectionState.RTCIceConnectionStateFailed) {
+        _scheduleIceRestart('ice_${state.name}');
+      }
+    };
+
     _peerConnection!.onConnectionState = (state) {
+      _voiceLog('Peer connection state', {'state': state.toString()});
+      if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
+        _webrtcConnectTimeoutTimer?.cancel();
+        _iceRestartAttempts = 0;
+      }
+      if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected ||
+          state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
+        _scheduleIceRestart('peer_${state.name}');
+      }
       if (mounted) {
         setState(() {
           statusText = 'Bağlantı: $state';
@@ -2430,11 +2529,87 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     };
   }
 
+  void _startWebRtcConnectTimeout() {
+    _webrtcConnectTimeoutTimer?.cancel();
+    _webrtcConnectTimeoutTimer = Timer(const Duration(seconds: 18), () {
+      if (!mounted || _peerConnection == null || remoteReadyForUi) return;
+      _voiceLog('WebRTC connection timeout', {
+        'attempts': _iceRestartAttempts,
+        'room': widget.roomName,
+      });
+      _scheduleIceRestart('connect_timeout');
+    });
+  }
+
+  void _scheduleIceRestart(String reason) {
+    if (_iceRestartInProgress || _peerConnection == null) return;
+    if (_iceRestartAttempts >= 3) {
+      _voiceLog('ICE restart limit reached', {'reason': reason});
+      if (mounted) {
+        setState(() => statusText = 'AÄŸ baÄŸlantÄ±sÄ± zayÄ±f, yeniden dene');
+      }
+      return;
+    }
+
+    _iceReconnectTimer?.cancel();
+    final delay = Duration(milliseconds: 700 + (_iceRestartAttempts * 600));
+    _voiceLog('ICE restart scheduled', {
+      'reason': reason,
+      'delayMs': delay.inMilliseconds,
+      'attempt': _iceRestartAttempts + 1,
+    });
+    _iceReconnectTimer = Timer(delay, () => unawaited(_restartIce(reason)));
+  }
+
+  Future<void> _restartIce(String reason) async {
+    final peerConnection = _peerConnection;
+    if (peerConnection == null || _iceRestartInProgress) return;
+
+    _iceRestartInProgress = true;
+    _iceRestartAttempts += 1;
+    try {
+      _voiceLog('ICE restart started', {
+        'reason': reason,
+        'attempt': _iceRestartAttempts,
+      });
+      await peerConnection.setConfiguration(_iceConfig);
+      final offer = await peerConnection.createOffer({'iceRestart': true});
+      await peerConnection.setLocalDescription(offer);
+      _sendSignal({
+        'type': 'offer',
+        'room': widget.roomName,
+        'sdp': offer.sdp,
+        'sdpType': offer.type,
+        'iceRestart': true,
+      });
+      if (mounted) {
+        setState(() => statusText = 'AÄŸ deÄŸiÅŸti, baÄŸlantÄ± yenileniyor');
+      }
+      _startWebRtcConnectTimeout();
+    } catch (e, stackTrace) {
+      AppLogger.error(
+        'webrtc',
+        'ICE restart failed',
+        {'reason': reason, 'attempt': _iceRestartAttempts},
+        e,
+        stackTrace,
+      );
+      if (mounted) setState(() => statusText = 'WebRTC yeniden baÄŸlanamadÄ±');
+    } finally {
+      _iceRestartInProgress = false;
+    }
+  }
+
   Future<void> _connectSignalSocket() async {
     if (_signalChannel != null) return;
+    final signalUri = AppConfig.wsEndpoint('signal');
+    if (signalUri == null) {
+      if (mounted) setState(() => statusText = 'Backend config eksik: WS_URL');
+      return;
+    }
 
     _signalChannel = ReliableWebSocketClient(
-      uri: Uri.parse('$baseWsUrl/signal'),
+      uri: signalUri,
       name: 'signal',
       onMessage: (message) async => _handleSignal(message),
       onStatus: (status) {
@@ -2447,6 +2622,9 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       onError: (error) {
         if (mounted) setState(() => statusText = 'Signal hatası: $error');
       },
+      onDisconnected: (reason) {
+        _voiceLog('Signal socket disconnected', {'reason': reason});
+      },
       onReconnected: () {
         if (!mounted) return;
         _sendSignal({
@@ -2456,6 +2634,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           'privateCode': widget.privateCode,
         });
         _sendMediaState();
+        _scheduleIceRestart('signal_reconnected');
       },
     );
     _signalChannel!.connect();
@@ -2492,11 +2671,19 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
   void _connectTranslateSocket() {
     if (_translateChannel != null) return;
+    final translateUri = AppConfig.wsEndpoint('translate');
+    if (translateUri == null) {
+      if (mounted) setState(() => statusText = 'Backend config eksik: WS_URL');
+      return;
+    }
 
     _translateChannel = ReliableWebSocketClient(
-      uri: Uri.parse('$baseWsUrl/translate'),
+      uri: translateUri,
       name: 'translate',
       heartbeatInterval: const Duration(seconds: 20),
+      onDisconnected: (reason) {
+        _voiceLog('Translate socket disconnected', {'reason': reason});
+      },
       onStatus: (status) {
         if (!mounted) return;
         setState(() {
@@ -3123,6 +3310,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
     await _saveHistoryIfNeeded();
     await _stopSubtitleRecording();
+    _webrtcConnectTimeoutTimer?.cancel();
+    _iceReconnectTimer?.cancel();
     await _peerConnection?.close();
     _peerConnection = null;
     _remoteRenderer.srcObject = null;
@@ -3305,6 +3494,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   void dispose() {
     _durationTimer?.cancel();
     _reactionTimer?.cancel();
+    _webrtcConnectTimeoutTimer?.cancel();
+    _iceReconnectTimer?.cancel();
     _waveController.dispose();
     _glowController.dispose();
     _saveHistoryIfNeeded();

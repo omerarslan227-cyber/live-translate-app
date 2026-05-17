@@ -16,8 +16,10 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _controller = PageController();
   int _page = 0;
-  String _source = 'Türkçe';
-  String _target = 'İngilizce';
+  String _source = bridgeCallLanguageNames.first;
+  String _target = bridgeCallLanguageNames.length > 1
+      ? bridgeCallLanguageNames[1]
+      : bridgeCallLanguageNames.first;
 
   Future<void> _finish() async {
     await OnboardingService.markComplete(
@@ -33,8 +35,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _next() async {
     if (_page < 2) {
       await _controller.nextPage(
-        duration: const Duration(milliseconds: 240),
-        curve: Curves.easeOut,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
       );
       return;
     }
@@ -55,99 +57,127 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView(
-                controller: _controller,
-                onPageChanged: (value) => setState(() => _page = value),
-                children: [
-                  _OnboardingPage(
-                    icon: Icons.translate_rounded,
-                    title: 'Canlı çeviri görüşmesi',
-                    body:
-                        'BridgeCall konuşmayı algılar, çevirir ve karşı tarafa altyazı/ses olarak ulaştırır.',
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.language_rounded, size: 54),
-                        const SizedBox(height: 20),
-                        const Text(
-                          'Dilini seç',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          'Varsayılan başlangıç Türkçe → İngilizce. Görüşme içinde her zaman değiştirebilirsin.',
-                          style: TextStyle(color: Colors.white70, height: 1.35),
-                        ),
-                        const SizedBox(height: 24),
-                        _LanguagePicker(
-                          label: 'Senin dilin',
-                          value: _source,
-                          onChanged: (value) => setState(() => _source = value),
-                        ),
-                        const SizedBox(height: 12),
-                        _LanguagePicker(
-                          label: 'Hedef dil',
-                          value: _target,
-                          onChanged: (value) => setState(() => _target = value),
-                        ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF050816), Color(0xFF111B34), Color(0xFF15103A)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: PageView(
+                  controller: _controller,
+                  onPageChanged: (value) => setState(() => _page = value),
+                  children: [
+                    const _OnboardingPage(
+                      icon: Icons.translate_rounded,
+                      title: 'Canli ceviri gorusmesi',
+                      body:
+                          'BridgeCall konusmayi algilar, cevirir ve karsi tarafa altyazi veya ses olarak ulastirir.',
+                      bullets: [
+                        'AI voice translation',
+                        'Gercek zamanli altyazi',
+                        'Global communication',
                       ],
                     ),
-                  ),
-                  _OnboardingPage(
-                    icon: Icons.mic_rounded,
-                    title: 'Mikrofon izni',
-                    body:
-                        'Sesli çeviri için mikrofon gerekir. İzin yoksa uygulama çökmeden seni yönlendirir.',
-                    actionLabel: 'Mikrofonu Aç',
-                    onAction: _requestMic,
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Row(
-                children: [
-                  ...List.generate(
-                    3,
-                    (index) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: _page == index ? 26 : 8,
-                      height: 8,
-                      margin: const EdgeInsets.only(right: 7),
-                      decoration: BoxDecoration(
-                        color: _page == index
-                            ? const Color(0xFF8B5CF6)
-                            : Colors.white24,
-                        borderRadius: BorderRadius.circular(999),
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const _HeroOrb(icon: Icons.language_rounded),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Dil akisini sec',
+                            style: TextStyle(
+                              fontSize: 34,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'Ilk aramayi hizli baslat. Gorusme icinde dilleri yine degistirebilirsin.',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              height: 1.35,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          _LanguagePicker(
+                            label: 'Senin dilin',
+                            value: _source,
+                            onChanged: (value) =>
+                                setState(() => _source = value),
+                          ),
+                          const SizedBox(height: 12),
+                          _LanguagePicker(
+                            label: 'Hedef dil',
+                            value: _target,
+                            onChanged: (value) =>
+                                setState(() => _target = value),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  const Spacer(),
-                  TextButton(onPressed: _finish, child: const Text('Atla')),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF8B5CF6),
+                    _OnboardingPage(
+                      icon: Icons.mic_rounded,
+                      title: 'Mikrofon hazirligi',
+                      body:
+                          'Sesli ceviri icin mikrofon izni gerekir. Izin yoksa BridgeCall net uyari verir.',
+                      bullets: const [
+                        'Noise suppression',
+                        'Echo cancellation',
+                        'Canli altyazi pipeline',
+                      ],
+                      actionLabel: 'Mikrofonu Ac',
+                      onAction: _requestMic,
                     ),
-                    onPressed: _next,
-                    child: Text(_page == 2 ? 'Başla' : 'Devam'),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: Row(
+                  children: [
+                    ...List.generate(
+                      3,
+                      (index) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 220),
+                        width: _page == index ? 28 : 8,
+                        height: 8,
+                        margin: const EdgeInsets.only(right: 7),
+                        decoration: BoxDecoration(
+                          color: _page == index
+                              ? const Color(0xFF8B5CF6)
+                              : Colors.white24,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton(onPressed: _finish, child: const Text('Atla')),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF8B5CF6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 14,
+                        ),
+                      ),
+                      onPressed: _next,
+                      child: Text(_page == 2 ? 'Basla' : 'Devam'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -158,6 +188,7 @@ class _OnboardingPage extends StatelessWidget {
   final IconData icon;
   final String title;
   final String body;
+  final List<String> bullets;
   final String? actionLabel;
   final VoidCallback? onAction;
 
@@ -165,6 +196,7 @@ class _OnboardingPage extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.body,
+    this.bullets = const [],
     this.actionLabel,
     this.onAction,
   });
@@ -177,8 +209,8 @@ class _OnboardingPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 58),
-          const SizedBox(height: 22),
+          _HeroOrb(icon: icon),
+          const SizedBox(height: 26),
           Text(
             title,
             style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900),
@@ -188,17 +220,76 @@ class _OnboardingPage extends StatelessWidget {
             body,
             style: const TextStyle(color: Colors.white70, height: 1.35),
           ),
+          const SizedBox(height: 22),
+          for (final item in bullets) _Bullet(text: item),
           if (actionLabel != null) ...[
             const SizedBox(height: 24),
             FilledButton.icon(
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF22C55E),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 14,
+                ),
               ),
               onPressed: onAction,
               icon: const Icon(Icons.mic_rounded),
               label: Text(actionLabel!),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroOrb extends StatelessWidget {
+  final IconData icon;
+
+  const _HeroOrb({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 92,
+      height: 92,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: [Color(0xFF8B5CF6), Color(0xFF4F8CFF)],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF8B5CF6).withValues(alpha: 0.36),
+            blurRadius: 28,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Icon(icon, size: 42, color: Colors.white),
+    );
+  }
+}
+
+class _Bullet extends StatelessWidget {
+  final String text;
+
+  const _Bullet({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
         ],
       ),
     );
@@ -219,7 +310,9 @@ class _LanguagePicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
-      initialValue: value,
+      initialValue: bridgeCallLanguageNames.contains(value)
+          ? value
+          : bridgeCallLanguageNames.first,
       decoration: InputDecoration(
         labelText: label,
         filled: true,

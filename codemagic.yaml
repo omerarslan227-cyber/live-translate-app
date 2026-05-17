@@ -5,6 +5,8 @@ workflows:
 
     environment:
       flutter: stable
+      groups:
+        - bridgecall
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.bridgecall.app
@@ -49,7 +51,17 @@ workflows:
       - name: Build IPA
         script: |
           cd /Users/builder/clone
-          flutter build ipa --release --export-options-plist=/Users/builder/exportOptions.plist
+          flutter build ipa --release \
+            --dart-define=WS_URL=$WS_URL \
+            --dart-define=BACKEND_HTTP_URL=$BACKEND_HTTP_URL \
+            --dart-define=REVENUECAT_IOS_API_KEY=$REVENUECAT_IOS_API_KEY \
+            --dart-define=TWILIO_TURN_URLS=$TWILIO_TURN_URLS \
+            --dart-define=TWILIO_TURN_USERNAME=$TWILIO_TURN_USERNAME \
+            --dart-define=TWILIO_TURN_PASSWORD=$TWILIO_TURN_PASSWORD \
+            --dart-define=TURN_URLS=$TURN_URLS \
+            --dart-define=TURN_USERNAME=$TURN_USERNAME \
+            --dart-define=TURN_PASSWORD=$TURN_PASSWORD \
+            --export-options-plist=/Users/builder/exportOptions.plist
 
       - name: Show output
         script: |

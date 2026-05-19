@@ -135,8 +135,8 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
       if (bytes.length < 12000 || rms < 60) {
         _setResult('STT', 'Atlandı: ses çok düşük veya kısa');
         setState(
-          () => _summary =
-              'Mikrofon çalışıyor ama ses seviyesi düşük görünüyor.',
+          () =>
+              _summary = 'Mikrofon çalışıyor ama ses seviyesi düşük görünüyor.',
         );
         return;
       }
@@ -160,15 +160,11 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
       final translated = (response['translated'] ?? '').toString();
       _setResult(
         'STT',
-        original.isEmpty
-            ? 'Başarısız: boş metin'
-            : 'Başarılı: $original',
+        original.isEmpty ? 'Başarısız: boş metin' : 'Başarılı: $original',
       );
       _setResult(
         'Çeviri',
-        translated.isEmpty
-            ? 'Başarısız: boş çeviri'
-            : 'Başarılı: $translated',
+        translated.isEmpty ? 'Başarısız: boş çeviri' : 'Başarılı: $translated',
       );
       _setResult('Toplam süre', '${response['timingMs'] ?? '-'}');
 
@@ -222,10 +218,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
 
     final probed = await _probeMicrophoneAccess();
     if (probed) {
-      _setResult(
-        'Mikrofon izni',
-        'Başarılı: iOS ayarı açık, WebRTC doğruladı',
-      );
+      _setResult('Mikrofon izni', 'Başarılı: iOS ayarı açık, WebRTC doğruladı');
       return true;
     }
 

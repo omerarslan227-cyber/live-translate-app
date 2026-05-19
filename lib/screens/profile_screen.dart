@@ -66,92 +66,118 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: Colors.transparent,
         title: const Text('Profil'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(18),
-        children: [
-          GlassCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Profil Bilgileri',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                _AppTextField(
-                  controller: _nameController,
-                  label: 'Görünen ad',
-                ),
-                const SizedBox(height: 14),
-                _AppTextField(
-                  controller: _aboutController,
-                  label: 'Hakkında',
-                  hint: 'Kısa bir açıklama yaz',
-                ),
-                const SizedBox(height: 14),
-                _LanguageDropdown(
-                  value: _source,
-                  label: 'Tercih edilen kaynak dil',
-                  items: languages,
-                  onChanged: (v) => setState(() => _source = v ?? 'Türkçe'),
-                ),
-                const SizedBox(height: 14),
-                _LanguageDropdown(
-                  value: _target,
-                  label: 'Tercih edilen hedef dil',
-                  items: languages,
-                  onChanged: (v) => setState(() => _target = v ?? 'İngilizce'),
-                ),
-                const SizedBox(height: 14),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Avatar modu'),
-                  subtitle: const Text(
-                    'Şimdilik görünüm ayarı olarak saklanır',
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
+          children: [
+            GlassCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Profil Bilgileri',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
-                  value: _avatarMode,
-                  onChanged: (value) => setState(() => _avatarMode = value),
-                ),
-                const SizedBox(height: 10),
-                FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.purple,
-                    minimumSize: const Size.fromHeight(54),
+                  const SizedBox(height: 16),
+                  _AppTextField(
+                    controller: _nameController,
+                    label: 'Görünen ad',
                   ),
-                  onPressed: _save,
-                  icon: const Icon(Icons.save),
-                  label: const Text('Profili Kaydet'),
-                ),
-              ],
+                  const SizedBox(height: 14),
+                  _AppTextField(
+                    controller: _aboutController,
+                    label: 'Hakkında',
+                    hint: 'Kısa bir açıklama yaz',
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 14),
+                  _LanguageDropdown(
+                    value: _source,
+                    label: 'Tercih edilen kaynak dil',
+                    items: languages,
+                    onChanged: (v) => setState(() => _source = v ?? 'Türkçe'),
+                  ),
+                  const SizedBox(height: 14),
+                  _LanguageDropdown(
+                    value: _target,
+                    label: 'Tercih edilen hedef dil',
+                    items: languages,
+                    onChanged: (v) =>
+                        setState(() => _target = v ?? 'İngilizce'),
+                  ),
+                  const SizedBox(height: 14),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Avatar modu'),
+                    subtitle: const Text(
+                      'Şimdilik görünüm ayarı olarak saklanır',
+                    ),
+                    value: _avatarMode,
+                    onChanged: (value) => setState(() => _avatarMode = value),
+                  ),
+                  const SizedBox(height: 10),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.purple,
+                      minimumSize: const Size.fromHeight(54),
+                    ),
+                    onPressed: _save,
+                    icon: const Icon(Icons.save),
+                    label: const Text('Profili Kaydet'),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
-          GlassCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Gizlilik ve güvenlik',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'BridgeCall kamera ve mikrofonu yalnızca görüşme için kullanır. Ses çeviri için güvenli sunucuya gönderilir; gizlilik politikası App Store Connect metadata ve uygulama içinde paylaşılmalıdır.',
-                  style: TextStyle(color: Colors.white70, height: 1.35),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () => launchUrl(
-                    Uri.parse('https://bridgecall.tech/privacy'),
-                    mode: LaunchMode.externalApplication,
+            const SizedBox(height: 14),
+            GlassCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.privacy_tip_outlined, color: AppColors.purple),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Gizlilik ve güvenlik',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  icon: const Icon(Icons.privacy_tip_outlined),
-                  label: const Text('Privacy Policy'),
-                ),
-              ],
+                  const SizedBox(height: 10),
+                  const Text(
+                    'BridgeCall kamera ve mikrofonu yalnızca görüşme için kullanır. Ses, canlı çeviri sağlamak amacıyla güvenli sunucuya gönderilebilir.',
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.white70, height: 1.35),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => launchUrl(
+                        Uri.parse('https://bridgecall.tech/privacy'),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                      icon: const Icon(Icons.privacy_tip_outlined),
+                      label: const Text(
+                        'Privacy Policy',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

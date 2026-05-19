@@ -253,7 +253,7 @@ class _LastRoomCard extends StatelessWidget {
               const Text('Son oda', style: TextStyle(color: Colors.white60)),
               const SizedBox(height: 8),
               Text(
-                lastHistory?.roomName ?? 'Hen?z oda yok',
+                lastHistory?.roomName ?? 'Henüz oda yok',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -264,8 +264,8 @@ class _LastRoomCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 lastHistory == null
-                    ? '?lk konu?man? ba?lat'
-                    : '${lastHistory!.sourceLanguage} ? ${lastHistory!.targetLanguage} ? ${lastHistory!.durationLabel}',
+                    ? 'İlk konuşmanı başlat'
+                    : '${lastHistory!.sourceLanguage} ↔ ${lastHistory!.targetLanguage} • ${lastHistory!.durationLabel}',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.white70),
@@ -294,7 +294,7 @@ class _LastRoomCard extends StatelessWidget {
                     );
                   },
             child: Text(
-              lastHistory == null ? 'Haz?r De?il' : 'Tekrar Ba?lan',
+              lastHistory == null ? 'Hazır Değil' : 'Tekrar Bağlan',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -614,9 +614,7 @@ class _InviteCard extends StatelessWidget {
                     await Clipboard.setData(ClipboardData(text: link));
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Davet linki kopyalandı'),
-                        ),
+                        const SnackBar(content: Text('Davet linki kopyalandı')),
                       );
                     }
                   },

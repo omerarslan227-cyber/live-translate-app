@@ -105,18 +105,14 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                 final compact = constraints.maxWidth < 360;
                 final label = Row(
                   children: const [
-                    Icon(
-                      Icons.bolt_rounded,
-                      color: AppColors.purple,
-                      size: 34,
-                    ),
+                    Icon(Icons.bolt_rounded, color: AppColors.purple, size: 34),
                     SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'H?zl? Ba?lat',
+                            'Hızlı Başlat',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -126,7 +122,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                           ),
                           SizedBox(height: 4),
                           Text(
-                            'En pop?ler ayarlarla hemen oday? olu?tur',
+                            'En popüler ayarlarla hemen odayı oluştur',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(color: Colors.white70),
@@ -141,7 +137,11 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                     backgroundColor: AppColors.purple,
                   ),
                   onPressed: _openCall,
-                  child: const Text('H?zl? Ba?lat'),
+                  child: const Text(
+                    'Hızlı Başlat',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 );
                 if (compact) {
                   return Column(
@@ -169,10 +169,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                   style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
-                _AppTextField(
-                  controller: roomController,
-                  label: 'Oda adı',
-                ),
+                _AppTextField(controller: roomController, label: 'Oda adı'),
                 const SizedBox(height: 14),
                 Row(
                   children: [
@@ -206,10 +203,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                   dropdownColor: AppColors.card,
                   items: capacities
                       .map(
-                        (e) => DropdownMenuItem(
-                          value: e,
-                          child: Text('$e kişi'),
-                        ),
+                        (e) =>
+                            DropdownMenuItem(value: e, child: Text('$e kişi')),
                       )
                       .toList(),
                   onChanged: (value) =>
@@ -230,9 +225,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Expanded(
-                          child: Text('Gelişmiş Ayarlar'),
-                        ),
+                        const Expanded(child: Text('Gelişmiş Ayarlar')),
                         Icon(
                           showAdvanced ? Icons.expand_less : Icons.expand_more,
                         ),
@@ -272,10 +265,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
             ),
             onPressed: _openCall,
             icon: const Icon(Icons.rocket_launch_rounded),
-            label: const Text(
-              'Odayı Başlat',
-              style: TextStyle(fontSize: 18),
-            ),
+            label: const Text('Odayı Başlat', style: TextStyle(fontSize: 18)),
           ),
           const SizedBox(height: 10),
           TextButton.icon(
@@ -351,10 +341,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _AppTextField(
-                  controller: roomController,
-                  label: 'Oda adı',
-                ),
+                _AppTextField(controller: roomController, label: 'Oda adı'),
                 const SizedBox(height: 14),
                 _AppTextField(
                   controller: codeController,
@@ -366,18 +353,16 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                   value: sourceLanguageName,
                   label: 'Benim konuşma dilim',
                   items: bridgeCallLanguageNames,
-                  onChanged: (value) => setState(
-                    () => sourceLanguageName = value ?? 'Türkçe',
-                  ),
+                  onChanged: (value) =>
+                      setState(() => sourceLanguageName = value ?? 'Türkçe'),
                 ),
                 const SizedBox(height: 14),
                 _LanguageDropdown(
                   value: targetLanguageName,
                   label: 'Dinlemek istediğim dil',
                   items: bridgeCallLanguageNames,
-                  onChanged: (value) => setState(
-                    () => targetLanguageName = value ?? 'İngilizce',
-                  ),
+                  onChanged: (value) =>
+                      setState(() => targetLanguageName = value ?? 'İngilizce'),
                 ),
                 const SizedBox(height: 18),
                 FilledButton.icon(
@@ -439,9 +424,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                       );
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Oda adı kopyalandı'),
-                          ),
+                          const SnackBar(content: Text('Oda adı kopyalandı')),
                         );
                       }
                     },
@@ -609,10 +592,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       _recorderReady = false;
       _voiceLog('Subtitle recorder open failed', {'error': e.toString()});
       if (mounted) {
-        setState(
-          () => statusText =
-              'Altyazı kayıt motoru açılamadı',
-        );
+        setState(() => statusText = 'Altyazı kayıt motoru açılamadı');
       }
       return false;
     }
@@ -885,10 +865,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     if (_iceRestartAttempts >= 3) {
       _voiceLog('ICE restart limit reached', {'reason': reason});
       if (mounted) {
-        setState(
-          () => statusText =
-              'Ağ bağlantısı zayıf, yeniden dene',
-        );
+        setState(() => statusText = 'Ağ bağlantısı zayıf, yeniden dene');
       }
       return;
     }
@@ -925,10 +902,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         'iceRestart': true,
       });
       if (mounted) {
-        setState(
-          () => statusText =
-              'Ağ değişti, bağlantı yenileniyor',
-        );
+        setState(() => statusText = 'Ağ değişti, bağlantı yenileniyor');
       }
       _startWebRtcConnectTimeout();
     } catch (e, stackTrace) {
@@ -940,10 +914,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         stackTrace,
       );
       if (mounted) {
-        setState(
-          () => statusText =
-              'WebRTC yeniden bağlanamadı',
-        );
+        setState(() => statusText = 'WebRTC yeniden bağlanamadı');
       }
     } finally {
       _iceRestartInProgress = false;
@@ -1114,24 +1085,17 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             }
           }
           if (mounted && data['error'] != null) {
-            setState(
-              () => statusText =
-                  'Çeviri hatası: ${data['error']}',
-            );
+            setState(() => statusText = 'Çeviri hatası: ${data['error']}');
           }
         } catch (e) {
           if (mounted) {
-            setState(
-              () => statusText = 'Çeviri veri hatası: $e',
-            );
+            setState(() => statusText = 'Çeviri veri hatası: $e');
           }
         }
       },
       onError: (error) {
         if (mounted) {
-          setState(
-            () => statusText = 'Çeviri soketi hatası: $error',
-          );
+          setState(() => statusText = 'Çeviri soketi hatası: $error');
         }
       },
     );
@@ -1145,8 +1109,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       if (mounted) {
         setState(() {
           subtitlesOn = false;
-          statusText =
-              'Mikrofon izni olmadan altyazı çalışmaz';
+          statusText = 'Mikrofon izni olmadan altyazı çalışmaz';
         });
       }
       return;
@@ -1155,8 +1118,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       if (mounted) {
         setState(() {
           subtitlesOn = false;
-          statusText =
-              'Mikrofon izni var ama kayıt motoru başlamadı';
+          statusText = 'Mikrofon izni var ama kayıt motoru başlamadı';
         });
       }
       return;
@@ -1187,19 +1149,13 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             });
             if (fileBytes.length < 12000) {
               if (mounted) {
-                setState(
-                  () =>
-                      statusText = 'Mikrofon sesi algılanmadı',
-                );
+                setState(() => statusText = 'Mikrofon sesi algılanmadı');
               }
               continue;
             }
             if (rms < 90) {
               if (mounted) {
-                setState(
-                  () => statusText =
-                      'Ses çok düşük algılandı',
-                );
+                setState(() => statusText = 'Ses çok düşük algılandı');
               }
             }
             final contextText = [
@@ -1452,10 +1408,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           'accept': true,
         });
         if (mounted) {
-          setState(
-            () => statusText =
-                'Katılım isteği otomatik kabul edildi',
-          );
+          setState(() => statusText = 'Katılım isteği otomatik kabul edildi');
         }
         return;
       case 'join_accepted':
@@ -1476,8 +1429,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         if (mounted) {
           setState(() {
             memberCount += 1;
-            statusText =
-                'Yeni bir kullanıcı katıldı';
+            statusText = 'Yeni bir kullanıcı katıldı';
           });
         }
         _sendMediaState();
@@ -1490,27 +1442,21 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         if (mounted) {
           setState(() {
             memberCount = memberCount > 1 ? memberCount - 1 : 1;
-            statusText =
-                'Bir kullanıcı odadan çıktı';
+            statusText = 'Bir kullanıcı odadan çıktı';
           });
         }
         return;
       case 'room_closed':
         _remoteRenderer.srcObject = null;
         if (mounted) {
-          setState(
-            () => statusText =
-                'Oda sahibi çağrıyı kapattı',
-          );
+          setState(() => statusText = 'Oda sahibi çağrıyı kapattı');
         }
         await _saveHistoryIfNeeded();
         if (mounted) Navigator.pop(context);
         return;
       case 'left_room':
         if (mounted) {
-          setState(
-            () => statusText = 'Odadan çıkıldı',
-          );
+          setState(() => statusText = 'Odadan çıkıldı');
         }
         return;
       case 'chat_message':
@@ -1598,9 +1544,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       );
       await _peerConnection!.setRemoteDescription(desc);
       if (mounted) {
-        setState(
-          () => statusText = 'Bağlantı tamamlandı',
-        );
+        setState(() => statusText = 'Bağlantı tamamlandı');
       }
     } else if (type == 'candidate') {
       final c = data['candidate'];
@@ -1741,8 +1685,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     if (text.startsWith('Oda oluşturuldu')) {
       return 'Katılımcı bekleniyor';
     }
-    if (text.startsWith('Bağlantı:') ||
-        text == 'Kamera açıldı') {
+    if (text.startsWith('Bağlantı:') || text == 'Kamera açıldı') {
       return remoteReadyForUi
           ? 'Görüşme devam ediyor'
           : 'Karşı taraf bekleniyor';
@@ -2519,13 +2462,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             bottom: _showChat ? 246 + bottomInset : 178,
             child: Column(
               children: [
-                for (final emoji in [
-                  '👍',
-                  '😍',
-                  '😂',
-                  '😮',
-                  '👏',
-                ])
+                for (final emoji in ['👍', '😍', '😂', '😮', '👏'])
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: InkWell(

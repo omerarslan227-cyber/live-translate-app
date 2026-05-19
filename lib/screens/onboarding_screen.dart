@@ -95,9 +95,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           _OnboardingPage(
                             pageIndex: 0,
                             currentPage: pageValue,
-                            title: 'Canli ceviri gorusmesi',
+                            title: 'Canlı çeviri görüşmesi',
                             body:
-                                'BridgeCall konusmayi algilar, cevirir ve karsi tarafa altyazi veya ses olarak ulastirir.',
+                                'BridgeCall konuşmayı algılar, çevirir ve karşı tarafa altyazı veya ses olarak ulaştırır.',
                             bullets: const [
                               'AI voice translation',
                               'Gercek zamanli altyazi',
@@ -118,7 +118,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             currentPage: pageValue,
                             title: 'Mikrofon hazirligi',
                             body:
-                                'Sesli ceviri icin mikrofon izni gerekir. Izin yoksa BridgeCall net uyari verir.',
+                                'Sesli çeviri için mikrofon izni gerekir. İzin yoksa BridgeCall net uyarı verir.',
                             bullets: const [
                               'Noise suppression',
                               'Echo cancellation',
@@ -452,7 +452,7 @@ class _OnboardingControls extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             ),
             onPressed: onNext,
-            child: Text(page == 2 ? 'Basla' : 'Devam'),
+            child: Text(page == 2 ? 'Başla' : 'Devam'),
           ),
         ],
       ),

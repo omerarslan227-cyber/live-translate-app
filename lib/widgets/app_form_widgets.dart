@@ -31,17 +31,20 @@ class _AppTextField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
   final String? hint;
+  final int maxLines;
 
   const _AppTextField({
     required this.controller,
     required this.label,
     this.hint,
+    this.maxLines = 1,
   });
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
+      maxLines: maxLines,
       decoration: _inputDecoration(label, hint: hint),
     );
   }
@@ -91,7 +94,7 @@ class _ActionButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           gradient: LinearGradient(colors: gradient),
           borderRadius: BorderRadius.circular(24),
@@ -121,17 +124,21 @@ class _ActionButton extends StatelessWidget {
                 children: [
                   Text(
                     title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.82),
-                      fontSize: 16,
+                      fontSize: 15,
                     ),
                   ),
                 ],

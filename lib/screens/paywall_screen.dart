@@ -89,7 +89,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             const SizedBox(height: 18),
             Text(
               usage?.isPro == true
-                  ? 'Pro aktif. Sinirsiz canli ceviri kullanabilirsin.'
+                  ? 'Pro aktif. Sınırsız canlı çeviri kullanabilirsin.'
                   : 'Ucretsiz gunluk 3 dakika doldugunda Pro ile sinirsiz devam et.',
               style: const TextStyle(color: Colors.white70, height: 1.35),
             ),
@@ -178,7 +178,7 @@ class _PaywallHero extends StatelessWidget {
           ),
           SizedBox(height: 8),
           Text(
-            'AI sesli ceviri, canli altyazi ve global gorusmeler icin limitsiz deneyim.',
+            'AI sesli çeviri, canlı altyazı ve global görüşmeler için limitsiz deneyim.',
             style: TextStyle(color: Colors.white, height: 1.35),
           ),
         ],
@@ -417,11 +417,11 @@ class _PremiumBenefitGrid extends StatelessWidget {
       children: [
         _FeatureRow(
           icon: Icons.all_inclusive_rounded,
-          text: 'Sinirsiz canli ceviri gorusmesi',
+          text: 'Sınırsız canlı çeviri görüşmesi',
         ),
         _FeatureRow(
           icon: Icons.speed_rounded,
-          text: 'Dusuk gecikmeli altyazi ve konusma cevirisi',
+          text: 'Düşük gecikmeli altyazı ve konuşma çevirisi',
         ),
         _FeatureRow(
           icon: Icons.language_rounded,

@@ -102,8 +102,8 @@ class ProfileData {
   const ProfileData({
     this.displayName = '',
     this.about = '',
-    this.preferredSourceLanguage = 'TÃ¼rkÃ§e',
-    this.preferredTargetLanguage = 'Ä°ngilizce',
+    this.preferredSourceLanguage = 'Türkçe',
+    this.preferredTargetLanguage = 'İngilizce',
     this.avatarMode = false,
   });
 
@@ -118,9 +118,9 @@ class ProfileData {
   factory ProfileData.fromJson(Map<String, dynamic> json) => ProfileData(
     displayName: (json['displayName'] ?? '').toString(),
     about: (json['about'] ?? '').toString(),
-    preferredSourceLanguage: (json['preferredSourceLanguage'] ?? 'TÃ¼rkÃ§e')
+    preferredSourceLanguage: (json['preferredSourceLanguage'] ?? 'Türkçe')
         .toString(),
-    preferredTargetLanguage: (json['preferredTargetLanguage'] ?? 'Ä°ngilizce')
+    preferredTargetLanguage: (json['preferredTargetLanguage'] ?? 'İngilizce')
         .toString(),
     avatarMode: json['avatarMode'] == true,
   );
@@ -155,10 +155,10 @@ class CallHistoryEntry {
   String get relativeLabel {
     final now = DateTime.now();
     final diff = now.difference(timestamp);
-    if (diff.inMinutes < 1) return 'Az Ã¶nce';
-    if (diff.inHours < 1) return '${diff.inMinutes} dk Ã¶nce';
-    if (diff.inDays < 1) return '${diff.inHours} sa Ã¶nce';
-    if (diff.inDays == 1) return 'DÃ¼n';
+    if (diff.inMinutes < 1) return 'Az önce';
+    if (diff.inHours < 1) return '${diff.inMinutes} dk önce';
+    if (diff.inDays < 1) return '${diff.inHours} sa önce';
+    if (diff.inDays == 1) return 'Dün';
     return '${timestamp.day.toString().padLeft(2, '0')}.${timestamp.month.toString().padLeft(2, '0')}.${timestamp.year}';
   }
 
@@ -176,8 +176,8 @@ class CallHistoryEntry {
       CallHistoryEntry(
         roomName: (json['roomName'] ?? '').toString(),
         privateCode: (json['privateCode'] ?? '').toString(),
-        sourceLanguage: (json['sourceLanguage'] ?? 'TÃ¼rkÃ§e').toString(),
-        targetLanguage: (json['targetLanguage'] ?? 'RusÃ§a').toString(),
+        sourceLanguage: (json['sourceLanguage'] ?? 'Türkçe').toString(),
+        targetLanguage: (json['targetLanguage'] ?? 'Rusça').toString(),
         memberCount: (json['memberCount'] ?? 1) as int,
         durationSeconds: (json['durationSeconds'] ?? 0) as int,
         timestamp:

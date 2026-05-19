@@ -13,16 +13,16 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
 
   bool _running = false;
   bool _recorderReady = false;
-  String _summary = 'Test baÅŸlatÄ±lmadÄ±';
+  String _summary = 'Test başlatılmadı';
   final Map<String, String> _results = {
     'Mikrofon izni': 'Bekliyor',
-    'KayÄ±t': 'Bekliyor',
+    'Kayıt': 'Bekliyor',
     'Audio format': 'Bekliyor',
     'Backend': 'Bekliyor',
     'STT': 'Bekliyor',
-    'Ã‡eviri': 'Bekliyor',
+    'Çeviri': 'Bekliyor',
     'TTS': 'Bekliyor',
-    'Toplam sÃ¼re': 'Bekliyor',
+    'Toplam süre': 'Bekliyor',
   };
   final List<String> _logs = [];
 
@@ -67,7 +67,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
     if (_running) return;
     setState(() {
       _running = true;
-      _summary = 'TanÄ±lama Ã§alÄ±ÅŸÄ±yor...';
+      _summary = 'Tanılama çalışıyor...';
       _logs.clear();
       for (final key in _results.keys.toList()) {
         _results[key] = 'Bekliyor';
@@ -83,8 +83,8 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
       _setResult(
         'Backend',
         health == null
-            ? 'BaÅŸarÄ±sÄ±z: health cevabÄ± yok'
-            : 'BaÅŸarÄ±lÄ±: model=${health['whisper_model']} beam=${health['whisper_beam_size']}',
+            ? 'Başarısız: health cevabı yok'
+            : 'Başarılı: model=${health['whisper_model']} beam=${health['whisper_beam_size']}',
       );
       if (health == null) return;
 
@@ -92,16 +92,16 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
         await _prepare();
       }
       if (!_recorderReady) {
-        _setResult('KayÄ±t', 'BaÅŸarÄ±sÄ±z: recorder aÃ§Ä±lamadÄ±');
+        _setResult('Kayıt', 'Başarısız: recorder açılamadı');
         setState(
           () => _summary =
-              'Mikrofon izni aÃ§Ä±k gÃ¶rÃ¼nÃ¼yor ama kayÄ±t motoru baÅŸlatÄ±lamadÄ±. UygulamayÄ± tamamen kapatÄ±p yeni build ile tekrar dene.',
+              'Mikrofon izni açık görünüyor ama kayıt motoru başlatılamadı. Uygulamayı tamamen kapatıp yeni build ile tekrar dene.',
         );
         return;
       }
 
       final path = await _diagnosticPath();
-      _setResult('KayÄ±t', '2 saniye konuÅŸ...');
+      _setResult('Kayıt', '2 saniye konuş...');
       await _diagnosticRecorder.startRecorder(
         toFile: path,
         codec: Codec.pcm16WAV,
@@ -115,44 +115,44 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
       await Future.delayed(const Duration(seconds: 2));
       final savedPath = await _diagnosticRecorder.stopRecorder();
       if (savedPath == null) {
-        _setResult('KayÄ±t', 'BaÅŸarÄ±sÄ±z: dosya yolu boÅŸ');
+        _setResult('Kayıt', 'Başarısız: dosya yolu boş');
         return;
       }
 
       final file = File(savedPath);
       if (!await file.exists()) {
-        _setResult('KayÄ±t', 'BaÅŸarÄ±sÄ±z: dosya oluÅŸmadÄ±');
+        _setResult('Kayıt', 'Başarısız: dosya oluşmadı');
         return;
       }
 
       final bytes = await file.readAsBytes();
       final rms = calculateWavRms(bytes);
       _setResult(
-        'KayÄ±t',
-        'BaÅŸarÄ±lÄ±: ${bytes.length} byte, RMS ${rms.toStringAsFixed(0)}',
+        'Kayıt',
+        'Başarılı: ${bytes.length} byte, RMS ${rms.toStringAsFixed(0)}',
       );
       _setResult('Audio format', 'pcm16wav, 16kHz, mono');
       if (bytes.length < 12000 || rms < 60) {
-        _setResult('STT', 'AtlandÄ±: ses Ã§ok dÃ¼ÅŸÃ¼k veya kÄ±sa');
+        _setResult('STT', 'Atlandı: ses çok düşük veya kısa');
         setState(
           () => _summary =
-              'Mikrofon Ã§alÄ±ÅŸÄ±yor ama ses seviyesi dÃ¼ÅŸÃ¼k gÃ¶rÃ¼nÃ¼yor.',
+              'Mikrofon çalışıyor ama ses seviyesi düşük görünüyor.',
         );
         return;
       }
 
       final response = await _sendAudioToBackend(bytes);
       if (response == null) {
-        _setResult('STT', 'BaÅŸarÄ±sÄ±z: backend cevap vermedi');
+        _setResult('STT', 'Başarısız: backend cevap vermedi');
         return;
       }
       if (response['noSpeech'] == true) {
-        _setResult('STT', 'BaÅŸarÄ±sÄ±z: backend ses algÄ±lamadÄ±');
-        _setResult('Toplam sÃ¼re', '${response['timingMs'] ?? '-'}');
+        _setResult('STT', 'Başarısız: backend ses algılamadı');
+        _setResult('Toplam süre', '${response['timingMs'] ?? '-'}');
         return;
       }
       if (response['error'] != null) {
-        _setResult('STT', 'BaÅŸarÄ±sÄ±z: ${response['error']}');
+        _setResult('STT', 'Başarısız: ${response['error']}');
         return;
       }
 
@@ -161,16 +161,16 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
       _setResult(
         'STT',
         original.isEmpty
-            ? 'BaÅŸarÄ±sÄ±z: boÅŸ metin'
-            : 'BaÅŸarÄ±lÄ±: $original',
+            ? 'Başarısız: boş metin'
+            : 'Başarılı: $original',
       );
       _setResult(
-        'Ã‡eviri',
+        'Çeviri',
         translated.isEmpty
-            ? 'BaÅŸarÄ±sÄ±z: boÅŸ Ã§eviri'
-            : 'BaÅŸarÄ±lÄ±: $translated',
+            ? 'Başarısız: boş çeviri'
+            : 'Başarılı: $translated',
       );
-      _setResult('Toplam sÃ¼re', '${response['timingMs'] ?? '-'}');
+      _setResult('Toplam süre', '${response['timingMs'] ?? '-'}');
 
       if (translated.isNotEmpty) {
         await _diagnosticRecorder.closeRecorder();
@@ -181,15 +181,15 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
         await _diagnosticTts.awaitSpeakCompletion(true);
         await _diagnosticTts.setLanguage('en-US');
         await _diagnosticTts.speak(translated);
-        _setResult('TTS', 'BaÅŸarÄ±lÄ±: cihaz TTS baÅŸlatÄ±ldÄ±');
+        _setResult('TTS', 'Başarılı: cihaz TTS başlatıldı');
       } else {
-        _setResult('TTS', 'AtlandÄ±: Ã§eviri yok');
+        _setResult('TTS', 'Atlandı: çeviri yok');
       }
 
       final elapsed = DateTime.now().difference(started).inMilliseconds;
-      setState(() => _summary = 'TanÄ±lama tamamlandÄ± (${elapsed}ms).');
+      setState(() => _summary = 'Tanılama tamamlandı (${elapsed}ms).');
     } catch (e) {
-      setState(() => _summary = 'TanÄ±lama hatasÄ±: $e');
+      setState(() => _summary = 'Tanılama hatası: $e');
       _logs.insert(0, 'Hata: $e');
     } finally {
       if (mounted) setState(() => _running = false);
@@ -207,7 +207,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
       '[BridgeCallVoiceDiag] Microphone permission status: ${status.name}',
     );
     if (status.isGranted) {
-      _setResult('Mikrofon izni', 'BaÅŸarÄ±lÄ±');
+      _setResult('Mikrofon izni', 'Başarılı');
       return true;
     }
 
@@ -216,7 +216,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
       '[BridgeCallVoiceDiag] Microphone permission requested: ${requested.name}',
     );
     if (requested.isGranted) {
-      _setResult('Mikrofon izni', 'BaÅŸarÄ±lÄ±');
+      _setResult('Mikrofon izni', 'Başarılı');
       return true;
     }
 
@@ -224,18 +224,18 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
     if (probed) {
       _setResult(
         'Mikrofon izni',
-        'BaÅŸarÄ±lÄ±: iOS ayarÄ± aÃ§Ä±k, WebRTC doÄŸruladÄ±',
+        'Başarılı: iOS ayarı açık, WebRTC doğruladı',
       );
       return true;
     }
 
     final message = requested.isPermanentlyDenied || requested.isRestricted
-        ? 'BaÅŸarÄ±sÄ±z: iOS Ayarlar > BridgeCall > Mikrofon aÃ§Ä±lmalÄ±'
-        : 'BaÅŸarÄ±sÄ±z: ${requested.name}';
+        ? 'Başarısız: iOS Ayarlar > BridgeCall > Mikrofon açılmalı'
+        : 'Başarısız: ${requested.name}';
     _setResult('Mikrofon izni', message);
     setState(
       () => _summary =
-          'Mikrofon izni aÃ§Ä±k gÃ¶rÃ¼nse bile uygulama gerÃ§ek mikrofon eriÅŸimi alamadÄ±. UygulamayÄ± kapatÄ±p aÃ§ veya yeni buildi tekrar kur.',
+          'Mikrofon izni açık görünse bile uygulama gerçek mikrofon erişimi alamadı. Uygulamayı kapatıp aç veya yeni buildi tekrar kur.',
     );
     return false;
   }
@@ -280,7 +280,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
       if (response.statusCode != 200) return null;
       return jsonDecode(body) as Map<String, dynamic>;
     } catch (e) {
-      _logs.insert(0, 'Backend health hatasÄ±: $e');
+      _logs.insert(0, 'Backend health hatası: $e');
       return null;
     } finally {
       client.close(force: true);
@@ -308,7 +308,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
       );
       return jsonDecode(raw as String) as Map<String, dynamic>;
     } catch (e) {
-      _logs.insert(0, 'Backend upload/STT hatasÄ±: $e');
+      _logs.insert(0, 'Backend upload/STT hatası: $e');
       return null;
     } finally {
       channel.sink.close();
@@ -320,7 +320,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text('Ses TanÄ±lama'),
+        title: const Text('Ses Tanılama'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(18),
@@ -330,7 +330,7 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Ses Sistemi KontrolÃ¼',
+                  'Ses Sistemi Kontrolü',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
@@ -347,8 +347,8 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
                   ),
                   label: Text(
                     _running
-                        ? 'Test Ã§alÄ±ÅŸÄ±yor'
-                        : '2 Saniyelik Ses Testi BaÅŸlat',
+                        ? 'Test çalışıyor'
+                        : '2 Saniyelik Ses Testi Başlat',
                   ),
                 ),
               ],
@@ -365,14 +365,14 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Icon(
-                            entry.value.startsWith('BaÅŸarÄ±lÄ±')
+                            entry.value.startsWith('Başarılı')
                                 ? Icons.check_circle_rounded
-                                : entry.value.startsWith('BaÅŸarÄ±sÄ±z')
+                                : entry.value.startsWith('Başarısız')
                                 ? Icons.error_rounded
                                 : Icons.info_outline_rounded,
-                            color: entry.value.startsWith('BaÅŸarÄ±lÄ±')
+                            color: entry.value.startsWith('Başarılı')
                                 ? AppColors.green
-                                : entry.value.startsWith('BaÅŸarÄ±sÄ±z')
+                                : entry.value.startsWith('Başarısız')
                                 ? AppColors.red
                                 : AppColors.yellow,
                           ),
@@ -408,13 +408,13 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'CanlÄ± Log',
+                  'Canlı Log',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
                 if (_logs.isEmpty)
                   const Text(
-                    'HenÃ¼z log yok',
+                    'Henüz log yok',
                     style: TextStyle(color: Colors.white60),
                   )
                 else

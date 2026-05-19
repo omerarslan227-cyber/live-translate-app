@@ -15,8 +15,8 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   );
   final TextEditingController codeController = TextEditingController();
 
-  String sourceLanguageName = 'TÃƒÆ’Ã‚Â¼rkÃƒÆ’Ã‚Â§e';
-  String targetLanguageName = 'Ãƒâ€Ã‚Â°ngilizce';
+  String sourceLanguageName = 'Türkçe';
+  String targetLanguageName = 'İngilizce';
   int selectedCapacity = 2;
   bool showAdvanced = false;
 
@@ -94,47 +94,69 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text('Oda OluÃƒâ€¦Ã…Â¸tur'),
+        title: const Text('Oda Oluştur'),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 6, 18, 24),
         children: [
           GlassCard(
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.bolt_rounded,
-                  color: AppColors.purple,
-                  size: 34,
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'HÃƒâ€Ã‚Â±zlÃƒâ€Ã‚Â± BaÃƒâ€¦Ã…Â¸lat',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 360;
+                final label = Row(
+                  children: const [
+                    Icon(
+                      Icons.bolt_rounded,
+                      color: AppColors.purple,
+                      size: 34,
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'H?zl? Ba?lat',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'En pop?ler ayarlarla hemen oday? olu?tur',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ],
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        'En popÃƒÆ’Ã‚Â¼ler ayarlarla hemen odayÃƒâ€Ã‚Â± oluÃƒâ€¦Ã…Â¸tur',
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                    ],
-                  ),
-                ),
-                FilledButton(
+                    ),
+                  ],
+                );
+                final button = FilledButton(
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.purple,
                   ),
                   onPressed: _openCall,
-                  child: const Text('HÃƒâ€Ã‚Â±zlÃƒâ€Ã‚Â± BaÃƒâ€¦Ã…Â¸lat'),
-                ),
-              ],
+                  child: const Text('H?zl? Ba?lat'),
+                );
+                if (compact) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [label, const SizedBox(height: 14), button],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: label),
+                    const SizedBox(width: 12),
+                    button,
+                  ],
+                );
+              },
             ),
           ),
           const SizedBox(height: 16),
@@ -149,7 +171,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                 const SizedBox(height: 16),
                 _AppTextField(
                   controller: roomController,
-                  label: 'Oda adÃƒâ€Ã‚Â±',
+                  label: 'Oda adı',
                 ),
                 const SizedBox(height: 14),
                 Row(
@@ -157,7 +179,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                     Expanded(
                       child: _LanguageDropdown(
                         value: sourceLanguageName,
-                        label: 'Dil seÃƒÆ’Ã‚Â§imi',
+                        label: 'Dil seçimi',
                         items: languages,
                         onChanged: (v) =>
                             setState(() => sourceLanguageName = v!),
@@ -186,7 +208,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                       .map(
                         (e) => DropdownMenuItem(
                           value: e,
-                          child: Text('$e kiÃƒâ€¦Ã…Â¸i'),
+                          child: Text('$e kişi'),
                         ),
                       )
                       .toList(),
@@ -209,7 +231,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                     child: Row(
                       children: [
                         const Expanded(
-                          child: Text('GeliÃƒâ€¦Ã…Â¸miÃƒâ€¦Ã…Â¸ Ayarlar'),
+                          child: Text('Gelişmiş Ayarlar'),
                         ),
                         Icon(
                           showAdvanced ? Icons.expand_less : Icons.expand_more,
@@ -222,7 +244,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                   const SizedBox(height: 14),
                   _AppTextField(
                     controller: codeController,
-                    label: 'ÃƒÆ’Ã¢â‚¬â€œzel oda kodu',
+                    label: 'Özel oda kodu',
                   ),
                   const SizedBox(height: 10),
                   Align(
@@ -232,7 +254,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                         () => codeController.text = _generateRoomCode(),
                       ),
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Yeni Kod OluÃƒâ€¦Ã…Â¸tur'),
+                      label: const Text('Yeni Kod Oluştur'),
                     ),
                   ),
                 ],
@@ -251,7 +273,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
             onPressed: _openCall,
             icon: const Icon(Icons.rocket_launch_rounded),
             label: const Text(
-              'OdayÃƒâ€Ã‚Â± BaÃƒâ€¦Ã…Â¸lat',
+              'Odayı Başlat',
               style: TextStyle(fontSize: 18),
             ),
           ),
@@ -262,10 +284,10 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                 roomController.text.trim(),
                 codeController.text.trim(),
               );
-              await Share.share('BridgeCall odama katÃƒâ€Ã‚Â±l: $roomLink');
+              await Share.share('BridgeCall odama katıl: $roomLink');
             },
             icon: const Icon(Icons.link_rounded),
-            label: const Text('Link paylaÃƒâ€¦Ã…Â¸'),
+            label: const Text('Link paylaş'),
           ),
         ],
       ),
@@ -293,8 +315,8 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
   final TextEditingController roomController = TextEditingController();
   final TextEditingController codeController = TextEditingController();
 
-  String sourceLanguageName = 'TÃƒÆ’Ã‚Â¼rkÃƒÆ’Ã‚Â§e';
-  String targetLanguageName = 'Ãƒâ€Ã‚Â°ngilizce';
+  String sourceLanguageName = 'Türkçe';
+  String targetLanguageName = 'İngilizce';
 
   @override
   void initState() {
@@ -320,7 +342,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text('Odaya KatÃƒâ€Ã‚Â±l'),
+        title: const Text('Odaya Katıl'),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
@@ -331,7 +353,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
               children: [
                 _AppTextField(
                   controller: roomController,
-                  label: 'Oda adÃƒâ€Ã‚Â±',
+                  label: 'Oda adı',
                 ),
                 const SizedBox(height: 14),
                 _AppTextField(
@@ -342,19 +364,19 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                 const SizedBox(height: 14),
                 _LanguageDropdown(
                   value: sourceLanguageName,
-                  label: 'Benim konuÃƒâ€¦Ã…Â¸ma dilim',
+                  label: 'Benim konuşma dilim',
                   items: bridgeCallLanguageNames,
                   onChanged: (value) => setState(
-                    () => sourceLanguageName = value ?? 'TÃƒÆ’Ã‚Â¼rkÃƒÆ’Ã‚Â§e',
+                    () => sourceLanguageName = value ?? 'Türkçe',
                   ),
                 ),
                 const SizedBox(height: 14),
                 _LanguageDropdown(
                   value: targetLanguageName,
-                  label: 'Dinlemek istediÃƒâ€Ã…Â¸im dil',
+                  label: 'Dinlemek istediğim dil',
                   items: bridgeCallLanguageNames,
                   onChanged: (value) => setState(
-                    () => targetLanguageName = value ?? 'Ãƒâ€Ã‚Â°ngilizce',
+                    () => targetLanguageName = value ?? 'İngilizce',
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -404,7 +426,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                   },
                   icon: const Icon(Icons.login_rounded),
                   label: const Text(
-                    'Odaya KatÃƒâ€Ã‚Â±l',
+                    'Odaya Katıl',
                     style: TextStyle(fontSize: 18),
                   ),
                 ),
@@ -418,13 +440,13 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Oda adÃƒâ€Ã‚Â± kopyalandÃƒâ€Ã‚Â±'),
+                            content: Text('Oda adı kopyalandı'),
                           ),
                         );
                       }
                     },
                     icon: const Icon(Icons.info_outline),
-                    label: const Text('Oda adÃƒâ€Ã‚Â±nÃƒâ€Ã‚Â± kopyala'),
+                    label: const Text('Oda adını kopyala'),
                   ),
                 ),
               ],
@@ -499,7 +521,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   String remoteFinalOriginalText = '';
   String remotePartialTranslatedText = '';
   String remoteFinalTranslatedText = '';
-  String statusText = 'HazÃƒâ€Ã‚Â±rlanÃƒâ€Ã‚Â±yor...';
+  String statusText = 'Hazırlanıyor...';
   String? myClientId;
   int memberCount = 1;
   bool remoteMicOn = true;
@@ -559,8 +581,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     if (mounted) {
       setState(() {
         statusText = widget.isOwner
-            ? 'Oda hazÃƒâ€Ã‚Â±r, katÃƒâ€Ã‚Â±lÃƒâ€Ã‚Â±mcÃƒâ€Ã‚Â± bekleniyor'
-            : 'BaÃƒâ€Ã…Â¸lantÃƒâ€Ã‚Â± kuruluyor';
+            ? 'Oda hazır, katılımcı bekleniyor'
+            : 'Bağlantı kuruluyor';
       });
     }
     if (subtitlesOn && _microphonePermissionGranted) {
@@ -568,7 +590,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     } else if (subtitlesOn && mounted) {
       setState(() {
         subtitlesOn = false;
-        statusText = 'Mikrofon izni verilmedi, altyazÃƒâ€Ã‚Â± kapalÃƒâ€Ã‚Â±';
+        statusText = 'Mikrofon izni verilmedi, altyazı kapalı';
       });
     }
   }
@@ -589,7 +611,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       if (mounted) {
         setState(
           () => statusText =
-              'AltyazÃƒâ€Ã‚Â± kayÃƒâ€Ã‚Â±t motoru aÃƒÆ’Ã‚Â§Ãƒâ€Ã‚Â±lamadÃƒâ€Ã‚Â±',
+              'Altyazı kayıt motoru açılamadı',
         );
       }
       return false;
@@ -628,7 +650,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
     if (mounted) {
       final message = requested.isPermanentlyDenied || requested.isRestricted
-          ? 'Ayarlar > BridgeCall > Mikrofon iznini aÃƒÆ’Ã‚Â§'
+          ? 'Ayarlar > BridgeCall > Mikrofon iznini aç'
           : 'Mikrofon izni gerekli';
       setState(() => statusText = message);
     }
@@ -753,13 +775,13 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       if (mounted) {
         setState(() {
           cameraStarted = true;
-          statusText = 'Kamera aÃƒÆ’Ã‚Â§Ãƒâ€Ã‚Â±ldÃƒâ€Ã‚Â±';
+          statusText = 'Kamera açıldı';
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          statusText = 'Kamera hatasÃƒâ€Ã‚Â±: $e';
+          statusText = 'Kamera hatası: $e';
         });
       }
     }
@@ -789,7 +811,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       _remoteRenderer.srcObject = incoming;
       if (mounted) {
         setState(() {
-          statusText = 'KarÃƒâ€¦Ã…Â¸Ãƒâ€Ã‚Â± taraf baÃƒâ€Ã…Â¸landÃƒâ€Ã‚Â±';
+          statusText = 'Karşı taraf bağlandı';
         });
       }
     };
@@ -840,7 +862,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       }
       if (mounted) {
         setState(() {
-          statusText = 'BaÃƒâ€Ã…Â¸lantÃƒâ€Ã‚Â±: $state';
+          statusText = 'Bağlantı: $state';
         });
       }
     };
@@ -865,7 +887,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       if (mounted) {
         setState(
           () => statusText =
-              'AÃƒÆ’Ã¢â‚¬ÂÃƒâ€¦Ã‚Â¸ baÃƒÆ’Ã¢â‚¬ÂÃƒâ€¦Ã‚Â¸lantÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±sÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± zayÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±f, yeniden dene',
+              'Ağ bağlantısı zayıf, yeniden dene',
         );
       }
       return;
@@ -905,7 +927,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       if (mounted) {
         setState(
           () => statusText =
-              'AÃƒÆ’Ã¢â‚¬ÂÃƒâ€¦Ã‚Â¸ deÃƒÆ’Ã¢â‚¬ÂÃƒâ€¦Ã‚Â¸iÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€¦Ã‚Â¸ti, baÃƒÆ’Ã¢â‚¬ÂÃƒâ€¦Ã‚Â¸lantÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â± yenileniyor',
+              'Ağ değişti, bağlantı yenileniyor',
         );
       }
       _startWebRtcConnectTimeout();
@@ -920,7 +942,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       if (mounted) {
         setState(
           () => statusText =
-              'WebRTC yeniden baÃƒÆ’Ã¢â‚¬ÂÃƒâ€¦Ã‚Â¸lanamadÃƒÆ’Ã¢â‚¬ÂÃƒâ€šÃ‚Â±',
+              'WebRTC yeniden bağlanamadı',
         );
       }
     } finally {
@@ -950,7 +972,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       },
       onError: (error) {
         if (mounted) {
-          setState(() => statusText = 'Signal hatasÃƒâ€Ã‚Â±: $error');
+          setState(() => statusText = 'Signal hatası: $error');
         }
       },
       onDisconnected: (reason) {
@@ -1021,7 +1043,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         setState(() {
           _translateStatus = status;
           if (status != BridgeSocketStatus.connected) {
-            statusText = 'ÃƒÆ’Ã¢â‚¬Â¡eviri: ${status.label}';
+            statusText = 'Çeviri: ${status.label}';
           }
         });
       },
@@ -1046,7 +1068,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               'audioBytes': data['audioBytes'],
             });
             if (_silentSubtitleChunks >= 3) {
-              setState(() => statusText = 'KonuÃƒâ€¦Ã…Â¸man bekleniyor');
+              setState(() => statusText = 'Konuşman bekleniyor');
             }
             return;
           }
@@ -1094,13 +1116,13 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           if (mounted && data['error'] != null) {
             setState(
               () => statusText =
-                  'ÃƒÆ’Ã¢â‚¬Â¡eviri hatasÃƒâ€Ã‚Â±: ${data['error']}',
+                  'Çeviri hatası: ${data['error']}',
             );
           }
         } catch (e) {
           if (mounted) {
             setState(
-              () => statusText = 'ÃƒÆ’Ã¢â‚¬Â¡eviri veri hatasÃƒâ€Ã‚Â±: $e',
+              () => statusText = 'Çeviri veri hatası: $e',
             );
           }
         }
@@ -1108,7 +1130,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       onError: (error) {
         if (mounted) {
           setState(
-            () => statusText = 'ÃƒÆ’Ã¢â‚¬Â¡eviri soketi hatasÃƒâ€Ã‚Â±: $error',
+            () => statusText = 'Çeviri soketi hatası: $error',
           );
         }
       },
@@ -1124,7 +1146,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         setState(() {
           subtitlesOn = false;
           statusText =
-              'Mikrofon izni olmadan altyazÃƒâ€Ã‚Â± ÃƒÆ’Ã‚Â§alÃƒâ€Ã‚Â±Ãƒâ€¦Ã…Â¸maz';
+              'Mikrofon izni olmadan altyazı çalışmaz';
         });
       }
       return;
@@ -1134,7 +1156,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         setState(() {
           subtitlesOn = false;
           statusText =
-              'Mikrofon izni var ama kayÃƒâ€Ã‚Â±t motoru baÃƒâ€¦Ã…Â¸lamadÃƒâ€Ã‚Â±';
+              'Mikrofon izni var ama kayıt motoru başlamadı';
         });
       }
       return;
@@ -1142,7 +1164,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     _connectTranslateSocket();
     isRecording = true;
     if (mounted) {
-      setState(() => statusText = 'AltyazÃƒâ€Ã‚Â± mikrofonu dinliyor');
+      setState(() => statusText = 'Altyazı mikrofonu dinliyor');
     }
 
     while (isRecording) {
@@ -1167,7 +1189,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               if (mounted) {
                 setState(
                   () =>
-                      statusText = 'Mikrofon sesi algÃƒâ€Ã‚Â±lanmadÃƒâ€Ã‚Â±',
+                      statusText = 'Mikrofon sesi algılanmadı',
                 );
               }
               continue;
@@ -1176,7 +1198,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               if (mounted) {
                 setState(
                   () => statusText =
-                      'Ses ÃƒÆ’Ã‚Â§ok dÃƒÆ’Ã‚Â¼Ãƒâ€¦Ã…Â¸ÃƒÆ’Ã‚Â¼k algÃƒâ€Ã‚Â±landÃƒâ€Ã‚Â±',
+                      'Ses çok düşük algılandı',
                 );
               }
             }
@@ -1211,7 +1233,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         if (mounted) {
           setState(
             () => statusText =
-                'Mikrofon izni var ama iPhone kayÃƒâ€Ã‚Â±t motoru sesi alamadÃƒâ€Ã‚Â±',
+                'Mikrofon izni var ama iPhone kayıt motoru sesi alamadı',
           );
         }
         subtitlesOn = false;
@@ -1304,7 +1326,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     });
 
     if (mounted) {
-      setState(() => statusText = 'Arama isteÃƒâ€Ã…Â¸i gÃƒÆ’Ã‚Â¶nderildi');
+      setState(() => statusText = 'Arama isteği gönderildi');
     }
   }
 
@@ -1416,8 +1438,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           setState(() {
             memberCount = data['memberCount'] ?? 1;
             statusText = widget.isOwner
-                ? 'KatÃƒâ€Ã‚Â±lÃƒâ€Ã‚Â±mcÃƒâ€Ã‚Â± bekleniyor'
-                : 'BaÃƒâ€Ã…Â¸lantÃƒâ€Ã‚Â± kuruluyor';
+                ? 'Katılımcı bekleniyor'
+                : 'Bağlantı kuruluyor';
           });
         }
         return;
@@ -1432,7 +1454,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         if (mounted) {
           setState(
             () => statusText =
-                'KatÃƒâ€Ã‚Â±lÃƒâ€Ã‚Â±m isteÃƒâ€Ã…Â¸i otomatik kabul edildi',
+                'Katılım isteği otomatik kabul edildi',
           );
         }
         return;
@@ -1440,14 +1462,14 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         if (mounted) {
           setState(() {
             memberCount = data['memberCount'] ?? 2;
-            statusText = 'Odaya giriÃƒâ€¦Ã…Â¸ onaylandÃƒâ€Ã‚Â±';
+            statusText = 'Odaya giriş onaylandı';
           });
         }
         _sendMediaState();
         return;
       case 'join_rejected':
         if (mounted) {
-          setState(() => statusText = 'Odaya giriÃƒâ€¦Ã…Â¸ reddedildi');
+          setState(() => statusText = 'Odaya giriş reddedildi');
         }
         return;
       case 'member_joined':
@@ -1455,7 +1477,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           setState(() {
             memberCount += 1;
             statusText =
-                'Yeni bir kullanÃƒâ€Ã‚Â±cÃƒâ€Ã‚Â± katÃƒâ€Ã‚Â±ldÃƒâ€Ã‚Â±';
+                'Yeni bir kullanıcı katıldı';
           });
         }
         _sendMediaState();
@@ -1469,7 +1491,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           setState(() {
             memberCount = memberCount > 1 ? memberCount - 1 : 1;
             statusText =
-                'Bir kullanÃƒâ€Ã‚Â±cÃƒâ€Ã‚Â± odadan ÃƒÆ’Ã‚Â§Ãƒâ€Ã‚Â±ktÃƒâ€Ã‚Â±';
+                'Bir kullanıcı odadan çıktı';
           });
         }
         return;
@@ -1478,7 +1500,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         if (mounted) {
           setState(
             () => statusText =
-                'Oda sahibi ÃƒÆ’Ã‚Â§aÃƒâ€Ã…Â¸rÃƒâ€Ã‚Â±yÃƒâ€Ã‚Â± kapattÃƒâ€Ã‚Â±',
+                'Oda sahibi çağrıyı kapattı',
           );
         }
         await _saveHistoryIfNeeded();
@@ -1487,7 +1509,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       case 'left_room':
         if (mounted) {
           setState(
-            () => statusText = 'Odadan ÃƒÆ’Ã‚Â§Ãƒâ€Ã‚Â±kÃƒâ€Ã‚Â±ldÃƒâ€Ã‚Â±',
+            () => statusText = 'Odadan çıkıldı',
           );
         }
         return;
@@ -1577,7 +1599,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       await _peerConnection!.setRemoteDescription(desc);
       if (mounted) {
         setState(
-          () => statusText = 'BaÃƒâ€Ã…Â¸lantÃƒâ€Ã‚Â± tamamlandÃƒâ€Ã‚Â±',
+          () => statusText = 'Bağlantı tamamlandı',
         );
       }
     } else if (type == 'candidate') {
@@ -1712,18 +1734,18 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
   String get _displayStatus {
     if (_isSpeakingTranslated) {
-      return 'ÃƒÆ’Ã¢â‚¬Â¡eviri sesi oynatÃƒâ€Ã‚Â±lÃƒâ€Ã‚Â±yor...';
+      return 'Çeviri sesi oynatılıyor...';
     }
-    if (isRecording) return 'Dinleniyor ve altyazÃƒâ€Ã‚Â± akÃƒâ€Ã‚Â±yor...';
+    if (isRecording) return 'Dinleniyor ve altyazı akıyor...';
     final text = statusText.trim();
-    if (text.startsWith('Oda oluÃƒâ€¦Ã…Â¸turuldu')) {
-      return 'KatÃƒâ€Ã‚Â±lÃƒâ€Ã‚Â±mcÃƒâ€Ã‚Â± bekleniyor';
+    if (text.startsWith('Oda oluşturuldu')) {
+      return 'Katılımcı bekleniyor';
     }
-    if (text.startsWith('BaÃƒâ€Ã…Â¸lantÃƒâ€Ã‚Â±:') ||
-        text == 'Kamera aÃƒÆ’Ã‚Â§Ãƒâ€Ã‚Â±ldÃƒâ€Ã‚Â±') {
+    if (text.startsWith('Bağlantı:') ||
+        text == 'Kamera açıldı') {
       return remoteReadyForUi
-          ? 'GÃƒÆ’Ã‚Â¶rÃƒÆ’Ã‚Â¼Ãƒâ€¦Ã…Â¸me devam ediyor'
-          : 'KarÃƒâ€¦Ã…Â¸Ãƒâ€Ã‚Â± taraf bekleniyor';
+          ? 'Görüşme devam ediyor'
+          : 'Karşı taraf bekleniyor';
     }
     return text;
   }
@@ -1758,17 +1780,17 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
   String get _voiceHealthTitle {
     if (!_microphonePermissionGranted) return 'Mikrofon izni yok';
-    if (!_recorderReady) return 'KayÃƒâ€Ã‚Â±t motoru bekliyor';
-    if (_isSpeakingTranslated) return 'ÃƒÆ’Ã¢â‚¬Â¡eviri sesi oynuyor';
-    if (_silentSubtitleChunks >= 3) return 'KonuÃƒâ€¦Ã…Â¸ma bekleniyor';
+    if (!_recorderReady) return 'Kayıt motoru bekliyor';
+    if (_isSpeakingTranslated) return 'Çeviri sesi oynuyor';
+    if (_silentSubtitleChunks >= 3) return 'Konuşma bekleniyor';
     final rms = _lastAudioRms;
     if (rms != null && rms < 420) {
-      return 'Ses seviyesi dÃƒÆ’Ã‚Â¼Ãƒâ€¦Ã…Â¸ÃƒÆ’Ã‚Â¼k';
+      return 'Ses seviyesi düşük';
     }
     final total = _lastTotalMs;
-    if (total != null && total > 3500) return 'Backend yavaÃƒâ€¦Ã…Â¸';
-    if (isRecording) return 'CanlÃƒâ€Ã‚Â± ÃƒÆ’Ã‚Â§eviri aktif';
-    return 'Ses sistemi hazÃƒâ€Ã‚Â±r';
+    if (total != null && total > 3500) return 'Backend yavaş';
+    if (isRecording) return 'Canlı çeviri aktif';
+    return 'Ses sistemi hazır';
   }
 
   String get _voiceHealthDetail {
@@ -1779,11 +1801,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     }
     if (_lastSttMs != null) parts.add('STT ${_lastSttMs}ms');
     if (_lastTranslationMs != null) {
-      parts.add('ÃƒÆ’Ã¢â‚¬Â¡eviri ${_lastTranslationMs}ms');
+      parts.add('Çeviri ${_lastTranslationMs}ms');
     }
     if (_lastTotalMs != null) parts.add('Toplam ${_lastTotalMs}ms');
     if (parts.isEmpty) return _displayStatus;
-    return parts.join(' ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ ');
+    return parts.join(' • ');
   }
 
   double get _voiceWaveLevel {
@@ -1973,7 +1995,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                               ),
                             ),
                             child: const Text(
-                              'KarÃƒâ€¦Ã…Â¸Ãƒâ€Ã‚Â± taraf',
+                              'Karşı taraf',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,
@@ -2019,7 +2041,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 child: const Text(
-                  'KarÃƒâ€¦Ã…Â¸Ãƒâ€Ã‚Â± taraf',
+                  'Karşı taraf',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -2114,11 +2136,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                         final original = [
                           finalSubtitleText,
                           remoteFinalOriginalText,
-                        ].where((text) => text.trim().isNotEmpty).join('\n');
+                        ].where((text) => text.trim().isNotEmpty).join('\\n');
                         final translated = [
                           finalTranslatedText,
                           remoteFinalTranslatedText,
-                        ].where((text) => text.trim().isNotEmpty).join('\n');
+                        ].where((text) => text.trim().isNotEmpty).join('\\n');
                         if (original.isNotEmpty || translated.isNotEmpty) {
                           await Share.share(
                             GrowthService.transcriptShareMessage(
@@ -2312,7 +2334,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                         ? partialSubtitleText
                         : (finalSubtitleText.isNotEmpty
                               ? finalSubtitleText
-                              : 'KonuÃƒâ€¦Ã…Â¸ma baÃƒâ€¦Ã…Â¸ladÃƒâ€Ã‚Â±Ãƒâ€Ã…Â¸Ãƒâ€Ã‚Â±nda burada anlÃƒâ€Ã‚Â±k altyazÃƒâ€Ã‚Â± gÃƒÆ’Ã‚Â¶rÃƒÆ’Ã‚Â¼necek'),
+                              : 'Konuşma başladığında burada anlık altyazı görünecek'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -2340,7 +2362,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   Row(
                     children: [
                       Text(
-                        '$targetLanguageName ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ Sana giden ÃƒÆ’Ã‚Â§eviri',
+                        '$targetLanguageName • Sana giden çeviri',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.70),
                           fontSize: compact ? 12 : 13,
@@ -2361,7 +2383,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                         ? partialTranslatedText
                         : (finalTranslatedText.isNotEmpty
                               ? finalTranslatedText
-                              : 'ÃƒÆ’Ã¢â‚¬Â¡eviri burada gÃƒÆ’Ã‚Â¶rÃƒÆ’Ã‚Â¼necek'),
+                              : 'Çeviri burada görünecek'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -2394,7 +2416,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   Row(
                     children: [
                       Text(
-                        'KarÃƒâ€¦Ã…Â¸Ãƒâ€Ã‚Â± taraf ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ Orijinal',
+                        'Karşı taraf • Orijinal',
                         style: TextStyle(
                           color: const Color(0xFF7DB7FF),
                           fontSize: compact ? 12 : 13,
@@ -2415,7 +2437,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                         ? remotePartialOriginalText
                         : (remoteFinalOriginalText.isNotEmpty
                               ? remoteFinalOriginalText
-                              : 'KarÃƒâ€¦Ã…Â¸Ãƒâ€Ã‚Â± taraf konuÃƒâ€¦Ã…Â¸tuÃƒâ€Ã…Â¸unda burada orijinal metin akacak'),
+                              : 'Karşı taraf konuştuğunda burada orijinal metin akacak'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -2443,7 +2465,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                   Row(
                     children: [
                       Text(
-                        '$sourceLanguageName ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ Sana gelen ÃƒÆ’Ã‚Â§eviri',
+                        '$sourceLanguageName • Sana gelen çeviri',
                         style: TextStyle(
                           color: const Color(0xFFB89BFF),
                           fontSize: compact ? 12 : 13,
@@ -2464,7 +2486,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                         ? remotePartialTranslatedText
                         : (remoteFinalTranslatedText.isNotEmpty
                               ? remoteFinalTranslatedText
-                              : 'KarÃƒâ€¦Ã…Â¸Ãƒâ€Ã‚Â± tarafÃƒâ€Ã‚Â±n ÃƒÆ’Ã‚Â§evirisi burada gÃƒÆ’Ã‚Â¶rÃƒÆ’Ã‚Â¼necek'),
+                              : 'Karşı tarafın çevirisi burada görünecek'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -2498,11 +2520,11 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             child: Column(
               children: [
                 for (final emoji in [
-                  'Ã„Å¸Ã…Â¸Ã¢â‚¬ËœÃ‚Â',
-                  'Ã„Å¸Ã…Â¸Ã‹Å“Ã‚Â',
-                  'Ã„Å¸Ã…Â¸Ã‹Å“Ã¢â‚¬Å¡',
-                  'Ã„Å¸Ã…Â¸Ã‹Å“Ã‚Â®',
-                  'Ã„Å¸Ã…Â¸Ã¢â‚¬ËœÃ‚Â',
+                  '👍',
+                  '😍',
+                  '😂',
+                  '😮',
+                  '👏',
                 ])
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
@@ -2557,7 +2579,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     icon: subtitlesOn
                         ? Icons.translate_rounded
                         : Icons.translate_outlined,
-                    label: 'ÃƒÆ’Ã¢â‚¬Â¡eviri',
+                    label: 'Çeviri',
                     color: subtitlesOn ? AppColors.purple : Colors.white24,
                     onTap: () async {
                       setState(() => subtitlesOn = !subtitlesOn);
@@ -2693,7 +2715,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                     padding: EdgeInsets.symmetric(vertical: 28),
                     child: Center(
                       child: Text(
-                        'Ãƒâ€Ã‚Â°lk mesajÃƒâ€Ã‚Â± sen gÃƒÆ’Ã‚Â¶nder',
+                        'İlk mesajı sen gönder',
                         style: TextStyle(color: Colors.white70),
                       ),
                     ),

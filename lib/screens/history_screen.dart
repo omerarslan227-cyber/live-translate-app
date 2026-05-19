@@ -15,10 +15,10 @@ class HistoryScreen extends StatelessWidget {
             return Scaffold(
               appBar: AppBar(
                 backgroundColor: Colors.transparent,
-                title: const Text('GeÃ§miÅŸ'),
+                title: const Text('Geçmiş'),
               ),
               body: history.isEmpty
-                  ? const Center(child: Text('HenÃ¼z geÃ§miÅŸ yok'))
+                  ? const Center(child: Text('Henüz geçmiş yok'))
                   : ListView.separated(
                       padding: const EdgeInsets.all(18),
                       itemCount: history.length,
@@ -50,11 +50,11 @@ class HistoryScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                '${item.sourceLanguage} â†” ${item.targetLanguage}',
+                                '${item.sourceLanguage} ↔ ${item.targetLanguage}',
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                'SÃ¼re: ${item.durationLabel} â€¢ KatÄ±lÄ±mcÄ±: ${item.memberCount} â€¢ Kod: ${item.privateCode}',
+                                'Süre: ${item.durationLabel} • Katılımcı: ${item.memberCount} • Kod: ${item.privateCode}',
                                 style: const TextStyle(color: Colors.white70),
                               ),
                               const SizedBox(height: 10),
@@ -78,7 +78,7 @@ class HistoryScreen extends StatelessWidget {
                                     );
                                   },
                                   icon: const Icon(Icons.refresh),
-                                  label: const Text('Tekrar KatÄ±l'),
+                                  label: const Text('Tekrar Katıl'),
                                 ),
                               ),
                             ],

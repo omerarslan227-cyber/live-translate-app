@@ -45,7 +45,7 @@ class _HomeShellState extends State<HomeShell> {
             NavigationDestination(
               icon: Icon(Icons.history),
               selectedIcon: Icon(Icons.history_toggle_off),
-              label: 'GeÃ§miÅŸ',
+              label: 'Geçmiş',
             ),
             NavigationDestination(
               icon: Icon(Icons.person_outline),
@@ -95,16 +95,19 @@ class HomeScreen extends StatelessWidget {
                           size: 30,
                         ),
                         const SizedBox(width: 10),
-                        const Text(
-                          'BridgeCall',
-                          style: TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.bold,
+                        const Expanded(
+                          child: Text(
+                            'BridgeCall',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                        const Spacer(),
                         IconButton(
-                          tooltip: 'Ses TanÄ±lama',
+                          tooltip: 'Ses Tanılama',
                           onPressed: () {
                             Navigator.push(
                               context,
@@ -126,8 +129,8 @@ class HomeScreen extends StatelessWidget {
                     _LastRoomCard(lastHistory: data.lastHistory),
                     const SizedBox(height: 18),
                     _ActionButton(
-                      title: 'Oda OluÅŸtur',
-                      subtitle: 'Yeni bir oda oluÅŸtur ve davet et',
+                      title: 'Oda Oluştur',
+                      subtitle: 'Yeni bir oda oluştur ve davet et',
                       icon: Icons.add,
                       gradient: const [Color(0xFF9D6BFF), Color(0xFF6D48E6)],
                       onTap: () {
@@ -142,8 +145,8 @@ class HomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
                     _ActionButton(
-                      title: 'Odaya KatÄ±l',
-                      subtitle: 'Kod ile mevcut odaya katÄ±l',
+                      title: 'Odaya Katıl',
+                      subtitle: 'Kod ile mevcut odaya katıl',
                       icon: Icons.login_rounded,
                       gradient: const [Color(0xFF4F8CFF), Color(0xFF3567FF)],
                       onTap: () {
@@ -204,21 +207,27 @@ class _StatusStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      child: Row(
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           const Icon(Icons.circle, color: AppColors.green, size: 12),
-          const SizedBox(width: 8),
-          Expanded(
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 220),
             child: Text(
               profileName.isEmpty
-                  ? 'BridgeCallâ€™a hoÅŸ geldin'
-                  : 'HoÅŸ geldin, $profileName',
+                  ? 'BridgeCall\'a hoş geldin'
+                  : 'Hoş geldin, $profileName',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
-          const SizedBox(width: 10),
           const Text(
-            'ğŸ”¥ PopÃ¼ler: TÃ¼rkÃ§e â†” RusÃ§a',
+            '🔥 Popüler: Türkçe ↔ Rusça',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(color: Colors.white70),
           ),
         ],
@@ -235,32 +244,35 @@ class _LastRoomCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Son oda', style: TextStyle(color: Colors.white60)),
-                const SizedBox(height: 8),
-                Text(
-                  lastHistory?.roomName ?? 'HenÃ¼z oda yok',
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 360;
+          final details = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Son oda', style: TextStyle(color: Colors.white60)),
+              const SizedBox(height: 8),
+              Text(
+                lastHistory?.roomName ?? 'Hen?z oda yok',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  lastHistory == null
-                      ? 'Ä°lk konuÅŸmanÄ± baÅŸlat'
-                      : '${lastHistory!.sourceLanguage} â†” ${lastHistory!.targetLanguage} â€¢ ${lastHistory!.durationLabel}',
-                  style: const TextStyle(color: Colors.white70),
-                ),
-              ],
-            ),
-          ),
-          FilledButton(
+              ),
+              const SizedBox(height: 4),
+              Text(
+                lastHistory == null
+                    ? '?lk konu?man? ba?lat'
+                    : '${lastHistory!.sourceLanguage} ? ${lastHistory!.targetLanguage} ? ${lastHistory!.durationLabel}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white70),
+              ),
+            ],
+          );
+          final button = FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.purple,
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
@@ -282,10 +294,27 @@ class _LastRoomCard extends StatelessWidget {
                     );
                   },
             child: Text(
-              lastHistory == null ? 'HazÄ±r DeÄŸil' : 'Tekrar BaÄŸlan',
+              lastHistory == null ? 'Haz?r De?il' : 'Tekrar Ba?lan',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+          );
+
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [details, const SizedBox(height: 14), button],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(child: details),
+              const SizedBox(width: 12),
+              button,
+            ],
+          );
+        },
       ),
     );
   }
@@ -303,14 +332,14 @@ class _DemoCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                'CanlÄ± Ã‡eviri Denemesi',
+                'Canlı Çeviri Denemesi',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: AppColors.purple,
                 ),
               ),
               Spacer(),
-              Text('â— CanlÄ±', style: TextStyle(color: AppColors.green)),
+              Text('● Canlı', style: TextStyle(color: AppColors.green)),
             ],
           ),
           SizedBox(height: 14),
@@ -318,7 +347,7 @@ class _DemoCard extends StatelessWidget {
             from: 'EN',
             to: 'TR',
             source: 'Hello, how are you?',
-            target: 'Merhaba, nasÄ±lsÄ±n?',
+            target: 'Merhaba, nasılsın?',
           ),
           SizedBox(height: 12),
           _DemoLine(
@@ -387,7 +416,7 @@ class _RecentConversationsCard extends StatelessWidget {
           Row(
             children: const [
               Text(
-                'Son KonuÅŸmalar',
+                'Son Konuşmalar',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               Spacer(),
@@ -398,7 +427,7 @@ class _RecentConversationsCard extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Text(
-                'HenÃ¼z gerÃ§ek konuÅŸma kaydÄ± yok. Ä°lk odayÄ± baÅŸlatÄ±nca burada gÃ¶rÃ¼necek.',
+                'Henüz gerçek konuşma kaydı yok. İlk odayı başlatınca burada görünecek.',
                 style: TextStyle(color: Colors.white70),
               ),
             )
@@ -445,7 +474,7 @@ class _ConversationTile extends StatelessWidget {
               ),
               const SizedBox(height: 3),
               Text(
-                '${entry.sourceLanguage} â†” ${entry.targetLanguage} â€¢ ${entry.durationLabel}',
+                '${entry.sourceLanguage} ↔ ${entry.targetLanguage} • ${entry.durationLabel}',
                 style: const TextStyle(color: Colors.white70),
               ),
             ],
@@ -512,7 +541,7 @@ class _InviteCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'ArkadaÅŸÄ±nÄ± Davet Et',
+                      'Arkadaşını Davet Et',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -520,7 +549,7 @@ class _InviteCard extends StatelessWidget {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'Davet linkini paylaÅŸ, birlikte konuÅŸun!',
+                      'Davet linkini paylaş, birlikte konuşun!',
                       style: TextStyle(color: Colors.white70),
                     ),
                   ],
@@ -546,7 +575,7 @@ class _InviteCard extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
-                            'Ã–nce bir oda oluÅŸtur veya bir odaya katÄ±l.',
+                            'Önce bir oda oluştur veya bir odaya katıl.',
                           ),
                         ),
                       );
@@ -556,10 +585,10 @@ class _InviteCard extends StatelessWidget {
                       lastHistory!.roomName,
                       lastHistory!.privateCode,
                     );
-                    await Share.share('BridgeCall odama katÄ±l: $link');
+                    await Share.share('BridgeCall odama katıl: $link');
                   },
                   icon: const Icon(Icons.ios_share_rounded),
-                  label: const Text('PaylaÅŸ'),
+                  label: const Text('Paylaş'),
                 ),
               ),
               const SizedBox(width: 12),
@@ -573,7 +602,7 @@ class _InviteCard extends StatelessWidget {
                     if (lastHistory == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Kopyalanacak aktif oda bulunamadÄ±.'),
+                          content: Text('Kopyalanacak aktif oda bulunamadı.'),
                         ),
                       );
                       return;
@@ -586,7 +615,7 @@ class _InviteCard extends StatelessWidget {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Davet linki kopyalandÄ±'),
+                          content: Text('Davet linki kopyalandı'),
                         ),
                       );
                     }
@@ -621,7 +650,7 @@ class MessagesScreen extends StatelessWidget {
                 title: const Text('Mesajlar'),
               ),
               body: messages.isEmpty
-                  ? const Center(child: Text('HenÃ¼z kayÄ±tlÄ± mesaj yok'))
+                  ? const Center(child: Text('Henüz kayıtlı mesaj yok'))
                   : ListView.separated(
                       padding: const EdgeInsets.all(18),
                       itemCount: messages.length,
@@ -644,7 +673,7 @@ class MessagesScreen extends StatelessWidget {
                                     ),
                                   ),
                                   Text(
-                                    item.isMine ? 'Ben' : 'KarÅŸÄ±',
+                                    item.isMine ? 'Ben' : 'Karşı',
                                     style: const TextStyle(
                                       color: Colors.white60,
                                     ),

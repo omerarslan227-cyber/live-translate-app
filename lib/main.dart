@@ -186,7 +186,7 @@ class AppStartupFailed extends StatelessWidget {
               ),
               child: SingleChildScrollView(
                 child: SelectableText(
-                  'App startup failed:\n$error',
+                  'App startup failed:\\n$error',
                   style: const TextStyle(color: Colors.white70),
                 ),
               ),

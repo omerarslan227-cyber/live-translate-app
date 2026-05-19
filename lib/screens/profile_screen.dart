@@ -10,8 +10,8 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _aboutController = TextEditingController();
-  String _source = 'TÃ¼rkÃ§e';
-  String _target = 'Ä°ngilizce';
+  String _source = 'Türkçe';
+  String _target = 'İngilizce';
   bool _avatarMode = false;
   bool _loading = true;
 
@@ -80,34 +80,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 16),
                 _AppTextField(
                   controller: _nameController,
-                  label: 'GÃ¶rÃ¼nen ad',
+                  label: 'Görünen ad',
                 ),
                 const SizedBox(height: 14),
                 _AppTextField(
                   controller: _aboutController,
-                  label: 'HakkÄ±nda',
-                  hint: 'KÄ±sa bir aÃ§Ä±klama yaz',
+                  label: 'Hakkında',
+                  hint: 'Kısa bir açıklama yaz',
                 ),
                 const SizedBox(height: 14),
                 _LanguageDropdown(
                   value: _source,
                   label: 'Tercih edilen kaynak dil',
                   items: languages,
-                  onChanged: (v) => setState(() => _source = v ?? 'TÃ¼rkÃ§e'),
+                  onChanged: (v) => setState(() => _source = v ?? 'Türkçe'),
                 ),
                 const SizedBox(height: 14),
                 _LanguageDropdown(
                   value: _target,
                   label: 'Tercih edilen hedef dil',
                   items: languages,
-                  onChanged: (v) => setState(() => _target = v ?? 'Ä°ngilizce'),
+                  onChanged: (v) => setState(() => _target = v ?? 'İngilizce'),
                 ),
                 const SizedBox(height: 14),
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Avatar modu'),
                   subtitle: const Text(
-                    'Åimdilik gÃ¶rÃ¼nÃ¼m ayarÄ± olarak saklanÄ±r',
+                    'Şimdilik görünüm ayarı olarak saklanır',
                   ),
                   value: _avatarMode,
                   onChanged: (value) => setState(() => _avatarMode = value),
@@ -131,12 +131,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Gizlilik ve gÃ¼venlik',
+                  'Gizlilik ve güvenlik',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'BridgeCall kamera ve mikrofonu yalnÄ±zca gÃ¶rÃ¼ÅŸme iÃ§in kullanÄ±r. Ses Ã§eviri iÃ§in gÃ¼venli sunucuya gÃ¶nderilir; gizlilik politikasÄ± App Store Connect metadata ve uygulama iÃ§inde paylaÅŸÄ±lmalÄ±dÄ±r.',
+                  'BridgeCall kamera ve mikrofonu yalnızca görüşme için kullanır. Ses çeviri için güvenli sunucuya gönderilir; gizlilik politikası App Store Connect metadata ve uygulama içinde paylaşılmalıdır.',
                   style: TextStyle(color: Colors.white70, height: 1.35),
                 ),
                 const SizedBox(height: 12),

@@ -13,12 +13,12 @@ class GrowthService {
   }) {
     final buffer = StringBuffer('BridgeCall ile konuştum');
     if (original.trim().isNotEmpty) {
-      buffer.writeln('\n\nOrijinal: ${original.trim()}');
+      buffer.writeln('\\n\\nOrijinal: ${original.trim()}');
     }
     if (translated.trim().isNotEmpty) {
       buffer.writeln('Çeviri: ${translated.trim()}');
     }
-    buffer.writeln('\nCanlı çeviri için BridgeCall');
+    buffer.writeln('\\nCanlı çeviri için BridgeCall');
     return buffer.toString();
   }
 

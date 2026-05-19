@@ -1,11 +1,11 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../models/language_option.dart';
 import '../services/onboarding_service.dart';
+import '../widgets/safe_voice_lottie.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final Widget next;
@@ -328,13 +328,7 @@ class _PremiumMotionCard extends StatelessWidget {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Lottie.asset(
-                'assets/lottie/bridgecall_voice.json',
-                fit: BoxFit.contain,
-                repeat: true,
-                frameRate: FrameRate.max,
-                filterQuality: FilterQuality.medium,
-              ),
+              const SafeVoiceLottie(height: 170),
               Positioned(
                 bottom: 18,
                 child: Container(

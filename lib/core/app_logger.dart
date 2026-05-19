@@ -5,11 +5,19 @@ import 'package:flutter/foundation.dart';
 class AppLogger {
   const AppLogger._();
 
-  static void info(String scope, String message, [Map<String, Object?> data = const {}]) {
+  static void info(
+    String scope,
+    String message, [
+    Map<String, Object?> data = const {},
+  ]) {
     _write('INFO', scope, message, data);
   }
 
-  static void warn(String scope, String message, [Map<String, Object?> data = const {}]) {
+  static void warn(
+    String scope,
+    String message, [
+    Map<String, Object?> data = const {},
+  ]) {
     _write('WARN', scope, message, data);
   }
 

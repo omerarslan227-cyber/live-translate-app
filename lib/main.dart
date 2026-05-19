@@ -63,7 +63,13 @@ Future<void> _configureStartupServices() async {
       });
     }
   } catch (e, stackTrace) {
-    AppLogger.error('subscription', 'RevenueCat startup failed', {}, e, stackTrace);
+    AppLogger.error(
+      'subscription',
+      'RevenueCat startup failed',
+      {},
+      e,
+      stackTrace,
+    );
   }
 }
 
@@ -1804,8 +1810,12 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   }
 
   String _generateRoomCode() {
-    final now = DateTime.now().millisecondsSinceEpoch.toString();
-    return now.substring(now.length - 6);
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    final random = math.Random.secure();
+    return List.generate(
+      8,
+      (_) => alphabet[random.nextInt(alphabet.length)],
+    ).join();
   }
 
   Future<void> _openCall() async {
@@ -1823,7 +1833,14 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
         : roomController.text.trim();
     final code = codeController.text.trim().isEmpty
         ? _generateRoomCode()
-        : codeController.text.trim();
+        : codeController.text.trim().toUpperCase();
+    final validCode = RegExp(r'^[A-Z0-9]{8,}$').hasMatch(code);
+    if (!validCode) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('8 karakterli oda kodu gerekli')),
+      );
+      return;
+    }
 
     Navigator.push(
       context,
@@ -2082,7 +2099,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                 _AppTextField(
                   controller: codeController,
                   label: 'Oda kodu',
-                  hint: '6 haneli oda kodunu gir',
+                  hint: '8 karakterli oda kodunu gir',
                 ),
                 const SizedBox(height: 14),
                 _LanguageDropdown(
@@ -2110,6 +2127,16 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                     ),
                   ),
                   onPressed: () async {
+                    final code = codeController.text.trim().toUpperCase();
+                    final validCode = RegExp(r'^[A-Z0-9]{8,}$').hasMatch(code);
+                    if (!validCode) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('8 karakterli oda kodunu gir'),
+                        ),
+                      );
+                      return;
+                    }
                     if (!await UsageService.canStartCall()) {
                       if (!context.mounted) return;
                       await Navigator.push(
@@ -2126,7 +2153,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
                       MaterialPageRoute(
                         builder: (_) => CallScreen(
                           roomName: roomController.text.trim(),
-                          privateCode: codeController.text.trim(),
+                          privateCode: code,
                           sourceLanguageName: sourceLanguageName,
                           targetLanguageName: targetLanguageName,
                           roomCapacity: 2,
@@ -2248,6 +2275,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   Timer? _durationTimer;
   Timer? _webrtcConnectTimeoutTimer;
   Timer? _iceReconnectTimer;
+  DateTime? _lastConnectionFeedbackAt;
   late final AnimationController _waveController;
   late final AnimationController _glowController;
   bool _iceRestartInProgress = false;
@@ -2407,6 +2435,25 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
   void _voiceLog(String event, [Map<String, Object?> data = const {}]) {
     debugPrint('[BridgeCallVoice] $event ${jsonEncode(data)}');
+  }
+
+  void _handleSocketStatusFeedback(BridgeSocketStatus status, String channel) {
+    if (status != BridgeSocketStatus.reconnecting &&
+        status != BridgeSocketStatus.disconnected) {
+      return;
+    }
+    final now = DateTime.now();
+    final last = _lastConnectionFeedbackAt;
+    if (last != null && now.difference(last) < const Duration(seconds: 4)) {
+      return;
+    }
+    _lastConnectionFeedbackAt = now;
+    _voiceLog('Connection status feedback', {
+      'channel': channel,
+      'status': status.name,
+    });
+    unawaited(HapticFeedback.lightImpact());
+    unawaited(SystemSound.play(SystemSoundType.alert));
   }
 
   Future<void> _openCamera() async {
@@ -2614,6 +2661,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       name: 'signal',
       onMessage: (message) async => _handleSignal(message),
       onStatus: (status) {
+        _handleSocketStatusFeedback(status, 'signal');
         if (!mounted) return;
         setState(() {
           _signalStatus = status;
@@ -2686,6 +2734,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         _voiceLog('Translate socket disconnected', {'reason': reason});
       },
       onStatus: (status) {
+        _handleSocketStatusFeedback(status, 'translate');
         if (!mounted) return;
         setState(() {
           _translateStatus = status;
@@ -4500,40 +4549,6 @@ class _WaveBar extends StatelessWidget {
           }),
         );
       },
-    );
-  }
-}
-
-class _BottomFeature extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color color;
-
-  const _BottomFeature({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassCard(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color),
-          const SizedBox(height: 10),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-        ],
-      ),
     );
   }
 }

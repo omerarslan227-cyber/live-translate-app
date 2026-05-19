@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:shimmer/shimmer.dart';
 
+import '../services/paywall_social_proof_service.dart';
 import '../services/revenuecat_service.dart';
 import '../services/usage_service.dart';
 
@@ -14,6 +16,7 @@ class PaywallScreen extends StatefulWidget {
 class _PaywallScreenState extends State<PaywallScreen> {
   UsageSnapshot? _usage;
   List<Package> _packages = const <Package>[];
+  PaywallSocialProofSnapshot? _socialProof;
   bool _loading = true;
   String? _message;
 
@@ -26,10 +29,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
   Future<void> _load() async {
     final usage = await UsageService.snapshot();
     final packages = await RevenueCatService.availablePackages();
+    final socialProof = await PaywallSocialProofService.load();
     if (!mounted) return;
     setState(() {
       _usage = usage;
       _packages = packages;
+      _socialProof = socialProof;
       _message = RevenueCatService.lastError;
       _loading = false;
     });
@@ -89,7 +94,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
               style: const TextStyle(color: Colors.white70, height: 1.35),
             ),
             const SizedBox(height: 18),
-            const _SocialProofStrip(),
+            _SocialProofStrip(snapshot: _socialProof),
             const SizedBox(height: 18),
             const _PremiumBenefitGrid(),
             const SizedBox(height: 22),
@@ -182,22 +187,223 @@ class _PaywallHero extends StatelessWidget {
   }
 }
 
-class _SocialProofStrip extends StatelessWidget {
-  const _SocialProofStrip();
+class _SocialProofStrip extends StatefulWidget {
+  final PaywallSocialProofSnapshot? snapshot;
+
+  const _SocialProofStrip({required this.snapshot});
+
+  @override
+  State<_SocialProofStrip> createState() => _SocialProofStripState();
+}
+
+class _SocialProofStripState extends State<_SocialProofStrip> {
+  int _testimonialIndex = 0;
+
+  @override
+  void didUpdateWidget(covariant _SocialProofStrip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_testimonialIndex >= (widget.snapshot?.testimonials.length ?? 0)) {
+      _testimonialIndex = 0;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
-      children: [
-        Icon(Icons.verified_rounded, color: Color(0xFF22C55E)),
-        SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            'Beta kullanicilari icin hizli, stabil ve reklamsiz canli ceviri.',
-            style: TextStyle(fontWeight: FontWeight.w700),
+    final snapshot = widget.snapshot;
+    if (snapshot == null) return const _SocialProofSkeleton();
+
+    final metrics = snapshot.metrics;
+    final testimonials = snapshot.testimonials;
+    if (!snapshot.hasPublicProof) {
+      return const _SocialProofSkeleton(
+        caption:
+            'Verified metrics will appear after production data is configured.',
+      );
+    }
+
+    final testimonial = testimonials.isEmpty
+        ? null
+        : testimonials[_testimonialIndex % testimonials.length];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF8B5CF6).withValues(alpha: 0.14),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
           ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const _PremiumTrustBadge(),
+              const Spacer(),
+              if (testimonials.length > 1)
+                IconButton(
+                  tooltip: 'Next testimonial',
+                  onPressed: () => setState(() {
+                    _testimonialIndex =
+                        (_testimonialIndex + 1) % testimonials.length;
+                  }),
+                  icon: const Icon(Icons.auto_awesome_rounded),
+                ),
+            ],
+          ),
+          if (metrics.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                for (final metric in metrics.take(2))
+                  Expanded(child: _MetricTile(metric: metric)),
+              ],
+            ),
+          ],
+          if (testimonial != null) ...[
+            const SizedBox(height: 14),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 260),
+              child: Align(
+                key: ValueKey(testimonial.quote),
+                alignment: Alignment.centerLeft,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '"${testimonial.quote}"',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        height: 1.32,
+                      ),
+                    ),
+                    if (testimonial.attribution.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        testimonial.attribution,
+                        style: const TextStyle(
+                          color: Colors.white60,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PremiumTrustBadge extends StatelessWidget {
+  const _PremiumTrustBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: const Color(0xFF22C55E).withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: const Color(0xFF22C55E).withValues(alpha: 0.5),
         ),
-      ],
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.verified_rounded, color: Color(0xFF22C55E), size: 17),
+          SizedBox(width: 7),
+          Text(
+            'Verified social proof',
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricTile extends StatelessWidget {
+  final PaywallMetric metric;
+
+  const _MetricTile({required this.metric});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.18),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              metric.value,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              metric.label,
+              style: const TextStyle(color: Colors.white60, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SocialProofSkeleton extends StatelessWidget {
+  final String caption;
+
+  const _SocialProofSkeleton({
+    this.caption =
+        'Production social proof will appear after verified metrics are configured.',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: Colors.white.withValues(alpha: 0.06),
+      highlightColor: Colors.white.withValues(alpha: 0.16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(width: 150, height: 18, color: Colors.white),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(child: Container(height: 52, color: Colors.white)),
+                const SizedBox(width: 10),
+                Expanded(child: Container(height: 52, color: Colors.white)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(caption, style: const TextStyle(color: Colors.white70)),
+          ],
+        ),
+      ),
     );
   }
 }

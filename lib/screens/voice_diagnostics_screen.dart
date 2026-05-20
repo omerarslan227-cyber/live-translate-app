@@ -281,7 +281,9 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
   }
 
   Future<Map<String, dynamic>?> _sendAudioToBackend(Uint8List bytes) async {
-    final translateUri = AppConfig.wsEndpoint('translate');
+    final translateUri = AppConfig.wsEndpoint(
+      '/ws/translate/diagnostics/voice-diagnostics',
+    );
     if (translateUri == null) {
       _logs.insert(0, 'Backend config eksik: WS_URL verilmedi');
       return null;
@@ -290,16 +292,29 @@ class _VoiceDiagnosticsScreenState extends State<VoiceDiagnosticsScreen> {
     try {
       channel.sink.add(
         jsonEncode({
-          'audio': base64Encode(bytes),
-          'sourceLang': 'TR',
-          'targetLang': 'EN-US',
-          'previousText': '',
+          'type': 'config',
+          'source_language': 'TR',
+          'target_language': 'EN-US',
+          'sample_rate': 16000,
+          'channels': 1,
+          'audio_format': 'pcm16',
         }),
       );
+      await Future.delayed(const Duration(milliseconds: 80));
+      channel.sink.add(bytes.length > 44 ? bytes.sublist(44) : bytes);
       final raw = await channel.stream.first.timeout(
-        const Duration(seconds: 30),
+        const Duration(seconds: 5),
       );
-      return jsonDecode(raw as String) as Map<String, dynamic>;
+      final data = jsonDecode(raw as String) as Map<String, dynamic>;
+      if (data['type'] == 'caption') {
+        return {
+          'stage': data['is_final'] == false ? 'partial' : 'final',
+          'original': data['text'],
+          'translated': data['translation'],
+          'timingMs': data['timing_ms'],
+        };
+      }
+      return data;
     } catch (e) {
       _logs.insert(0, 'Backend upload/STT hatası: $e');
       return null;

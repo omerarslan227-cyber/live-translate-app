@@ -469,11 +469,15 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   final FlutterTts _tts = FlutterTts();
   final TextEditingController _chatController = TextEditingController();
+  StreamController<Uint8List>? _subtitlePcmStream;
+  StreamSubscription<Uint8List>? _subtitlePcmSubscription;
 
   MediaStream? _localStream;
   RTCPeerConnection? _peerConnection;
   ReliableWebSocketClient? _signalChannel;
   ReliableWebSocketClient? _translateChannel;
+  late final String _translatePeerId =
+      'peer-${DateTime.now().millisecondsSinceEpoch}-${math.Random().nextInt(999999)}';
 
   bool micOn = true;
   bool camOn = true;
@@ -596,18 +600,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       }
       return false;
     }
-  }
-
-  Future<bool> _reopenSubtitleRecorder() async {
-    try {
-      await _recorder.stopRecorder();
-    } catch (_) {}
-    try {
-      await _recorder.closeRecorder();
-    } catch (_) {}
-    _recorderReady = false;
-    await Future.delayed(const Duration(milliseconds: 250));
-    return _openSubtitleRecorder();
   }
 
   Future<bool> _ensureMicrophonePermission() async {
@@ -765,11 +757,6 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         });
       }
     }
-  }
-
-  Future<String> _tempWavPath() async {
-    final dir = await getTemporaryDirectory();
-    return '${dir.path}/temp_audio.wav';
   }
 
   Future<void> _createPeerConnection() async {
@@ -995,7 +982,9 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
 
   void _connectTranslateSocket() {
     if (_translateChannel != null) return;
-    final translateUri = AppConfig.wsEndpoint('translate');
+    final translateUri = AppConfig.wsEndpoint(
+      '/ws/translate/${Uri.encodeComponent(widget.roomName)}/${Uri.encodeComponent(myClientId ?? _translatePeerId)}',
+    );
     if (translateUri == null) {
       if (mounted) setState(() => statusText = 'Backend config eksik: WS_URL');
       return;
@@ -1008,8 +997,12 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       onDisconnected: (reason) {
         _voiceLog('Translate socket disconnected', {'reason': reason});
       },
+      onReconnected: _sendTranslateConfig,
       onStatus: (status) {
         _handleSocketStatusFeedback(status, 'translate');
+        if (status == BridgeSocketStatus.connected) {
+          _sendTranslateConfig();
+        }
         if (!mounted) return;
         setState(() {
           _translateStatus = status;
@@ -1020,8 +1013,9 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       },
       onMessage: (message) {
         try {
+          if (message is! String) return;
           final data = jsonDecode(message);
-          final timing = data['timingMs'];
+          final timing = data['timing_ms'] ?? data['timingMs'];
           if (timing is Map) {
             _lastSttMs = _intFromJson(timing['stt']);
             _lastTranslationMs = _intFromJson(timing['translation']);
@@ -1031,6 +1025,14 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               'audioBytes': data['audioBytes'],
               'format': data['format'],
             });
+            if ((_lastTotalMs ?? 0) > 850) {
+              _voiceLog('Discard stale subtitle result', {
+                'totalMs': _lastTotalMs,
+                'sourceLang': data['source_language'] ?? data['sourceLang'],
+                'targetLang': data['target_language'] ?? data['targetLang'],
+              });
+              return;
+            }
           }
           if (mounted && data['noSpeech'] == true) {
             _silentSubtitleChunks += 1;
@@ -1043,17 +1045,23 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             }
             return;
           }
-          if (mounted && data['translated'] != null) {
+          final hasModernCaption = data['type'] == 'caption';
+          final translatedValue = data['translation'] ?? data['translated'];
+          if (mounted && (translatedValue != null || hasModernCaption)) {
             _silentSubtitleChunks = 0;
-            final stage = (data['stage'] ?? 'partial').toString();
-            final original = (data['original'] ?? '').toString().trim();
-            final translated = (data['translated'] ?? '').toString().trim();
+            final isFinal = data['is_final'] != false;
+            final stage = (data['stage'] ?? (isFinal ? 'final' : 'partial'))
+                .toString();
+            final original = (data['text'] ?? data['original'] ?? '')
+                .toString()
+                .trim();
+            final translated = (translatedValue ?? '').toString().trim();
             _voiceLog('STT/translation result', {
               'stage': stage,
               'originalLength': original.length,
               'translatedLength': translated.length,
-              'sourceLang': data['sourceLang'],
-              'targetLang': data['targetLang'],
+              'sourceLang': data['source_language'] ?? data['sourceLang'],
+              'targetLang': data['target_language'] ?? data['targetLang'],
             });
 
             setState(() {
@@ -1102,6 +1110,17 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     _translateChannel!.connect();
   }
 
+  void _sendTranslateConfig() {
+    _translateChannel?.sendJson({
+      'type': 'config',
+      'source_language': sourceLanguages[sourceLanguageName],
+      'target_language': targetLanguages[targetLanguageName],
+      'sample_rate': 16000,
+      'channels': 1,
+      'audio_format': 'pcm16',
+    });
+  }
+
   Future<void> _startSubtitleRecording() async {
     if (isRecording) return;
     _microphonePermissionGranted = await _ensureMicrophonePermission();
@@ -1129,150 +1148,70 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       setState(() => statusText = 'Altyazı mikrofonu dinliyor');
     }
 
-    while (isRecording) {
-      try {
-        final path = await _tempWavPath();
-        final savedPath = await _recordSubtitleChunk(path);
-        if (savedPath != null) {
-          final file = File(savedPath);
-          if (await file.exists()) {
-            final fileBytes = await file.readAsBytes();
-            final rms = calculateWavRms(fileBytes);
-            final durationSeconds = calculateWavDurationSeconds(fileBytes);
-            final silenceRatio = calculateWavSilenceRatio(fileBytes);
-            _lastAudioBytes = fileBytes.length;
-            _lastAudioRms = rms.round();
-            _voiceLog('Audio recorded', {
-              'recorded': true,
-              'bytes': fileBytes.length,
-              'format': 'pcm16wav',
-              'sampleRate': 16000,
-              'channels': 1,
-              'durationSeconds': durationSeconds,
-              'rms': rms,
-              'silenceRatio': silenceRatio,
-            });
-            if (fileBytes.length < 12000 || durationSeconds < 1.0) {
-              if (mounted) {
-                setState(() => statusText = 'Mikrofon sesi algılanmadı');
-              }
-              continue;
-            }
-            if (rms < 90 || (silenceRatio > 0.92 && rms < 420)) {
-              if (mounted) {
-                setState(() => statusText = 'Ses çok düşük algılandı');
-              }
-              continue;
-            }
-            final contextText = [
-              finalSubtitleText,
-              partialSubtitleText,
-            ].where((text) => text.trim().isNotEmpty).join(' ');
-            _translateChannel?.sendJson({
-              'audio': base64Encode(fileBytes),
-              'sourceLang': sourceLanguages[sourceLanguageName],
-              'targetLang': targetLanguages[targetLanguageName],
-              'previousText': contextText,
-            });
-          } else {
-            _voiceLog('Audio recorded', {
-              'recorded': false,
-              'reason': 'missing_file',
-            });
-          }
-        } else {
-          _voiceLog('Audio recorded', {
-            'recorded': false,
-            'reason': 'null_path',
-          });
-        }
-      } catch (e) {
-        _voiceLog('Subtitle recorder failed, retrying once', {
-          'error': e.toString(),
-        });
-        final recovered = await _retrySubtitleChunkAfterRecorderReset();
-        if (recovered) continue;
-        if (mounted) {
-          setState(
-            () => statusText =
-                'Mikrofon izni var ama iPhone kayıt motoru sesi alamadı',
-          );
-        }
-        subtitlesOn = false;
-        isRecording = false;
+    try {
+      await _startSubtitlePcmStream();
+    } catch (e) {
+      _voiceLog('Subtitle stream failed', {'error': e.toString()});
+      if (mounted) {
+        setState(
+          () => statusText =
+              'Mikrofon izni var ama iPhone kayıt motoru sesi alamadı',
+        );
       }
+      subtitlesOn = false;
+      isRecording = false;
     }
     if (mounted) setState(() {});
   }
 
-  Future<String?> _recordSubtitleChunk(String path) async {
+  Future<void> _startSubtitlePcmStream() async {
     _voiceLog('Recorder start', {
-      'format': 'pcm16wav',
+      'format': 'pcm16',
       'sampleRate': 16000,
       'channels': 1,
       'audioSource': 'voice_communication',
       'voiceProcessing': true,
     });
+    _subtitlePcmStream = StreamController<Uint8List>();
+    _subtitlePcmSubscription = _subtitlePcmStream!.stream.listen(
+      _handleSubtitlePcmChunk,
+      onError: (Object error) {
+        _voiceLog('Subtitle PCM stream error', {'error': error.toString()});
+      },
+    );
     await _recorder.startRecorder(
-      toFile: path,
-      codec: Codec.pcm16WAV,
+      toStream: _subtitlePcmStream!.sink,
+      codec: Codec.pcm16,
       numChannels: 1,
       sampleRate: 16000,
+      bufferSize: 6400,
       audioSource: AudioSource.voice_communication,
       enableVoiceProcessing: true,
       enableNoiseSuppression: true,
       enableEchoCancellation: true,
     );
-    await Future.delayed(const Duration(milliseconds: 1250));
-    return _recorder.stopRecorder();
   }
 
-  Future<bool> _retrySubtitleChunkAfterRecorderReset() async {
-    final reopened = await _reopenSubtitleRecorder();
-    if (!reopened || !isRecording) return false;
-    try {
-      final retryPath = await _tempWavPath();
-      final savedPath = await _recordSubtitleChunk(retryPath);
-      if (savedPath == null) return false;
-      final file = File(savedPath);
-      if (!await file.exists()) return false;
-      final fileBytes = await file.readAsBytes();
-      final rms = calculateWavRms(fileBytes);
-      final durationSeconds = calculateWavDurationSeconds(fileBytes);
-      final silenceRatio = calculateWavSilenceRatio(fileBytes);
-      _lastAudioBytes = fileBytes.length;
-      _lastAudioRms = rms.round();
-      _voiceLog('Audio recorded after recorder retry', {
-        'recorded': true,
-        'bytes': fileBytes.length,
-        'format': 'pcm16wav',
-        'sampleRate': 16000,
-        'channels': 1,
-        'durationSeconds': durationSeconds,
-        'rms': rms,
-        'silenceRatio': silenceRatio,
-      });
-      if (fileBytes.length < 12000 ||
-          durationSeconds < 1.0 ||
-          rms < 90 ||
-          (silenceRatio > 0.92 && rms < 420)) {
-        return true;
-      }
-      final contextText = [
-        finalSubtitleText,
-        partialSubtitleText,
-      ].where((text) => text.trim().isNotEmpty).join(' ');
-      _translateChannel?.sendJson({
-        'audio': base64Encode(fileBytes),
-        'sourceLang': sourceLanguages[sourceLanguageName],
-        'targetLang': targetLanguages[targetLanguageName],
-        'previousText': contextText,
-      });
-      return true;
-    } catch (e) {
-      _voiceLog('Subtitle recorder retry failed', {'error': e.toString()});
-      return false;
+  void _handleSubtitlePcmChunk(Uint8List pcm) {
+    if (!isRecording || _translateChannel?.isConnected != true) return;
+    final rms = calculatePcmRms(pcm);
+    final durationSeconds = calculatePcmDurationSeconds(pcm);
+    final silenceRatio = calculatePcmSilenceRatio(pcm);
+    _lastAudioBytes = pcm.length;
+    _lastAudioRms = rms.round();
+    _voiceLog('Audio streamed', {
+      'bytes': pcm.length,
+      'format': 'pcm16',
+      'sampleRate': 16000,
+      'channels': 1,
+      'durationSeconds': durationSeconds,
+      'rms': rms,
+      'silenceRatio': silenceRatio,
+    });
+    if (durationSeconds < 0.18 || rms < 90 || silenceRatio > 0.98) {
+      return;
     }
+    _translateChannel?.sendBinary(pcm);
   }
 
   Future<void> _stopSubtitleRecording() async {
@@ -1280,6 +1219,10 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     try {
       await _recorder.stopRecorder();
     } catch (_) {}
+    await _subtitlePcmSubscription?.cancel();
+    await _subtitlePcmStream?.close();
+    _subtitlePcmSubscription = null;
+    _subtitlePcmStream = null;
     if (mounted) setState(() {});
   }
 
@@ -2895,17 +2838,52 @@ double calculateWavDurationSeconds(Uint8List bytes) {
   return pcmBytes / (16000 * 1 * 2);
 }
 
+double calculatePcmDurationSeconds(Uint8List bytes) {
+  return bytes.length / (16000 * 1 * 2);
+}
+
+double calculatePcmRms(Uint8List bytes) {
+  if (bytes.length < 2) return 0;
+  final data = ByteData.sublistView(bytes);
+  double sumSquares = 0;
+  var count = 0;
+  for (var offset = 0; offset + 1 < bytes.length; offset += 2) {
+    final sample = data.getInt16(offset, Endian.little);
+    sumSquares += sample * sample;
+    count += 1;
+  }
+  if (count == 0) return 0;
+  return math.sqrt(sumSquares / count);
+}
+
+double calculatePcmSilenceRatio(Uint8List bytes) {
+  return _calculatePcmSilenceRatio(bytes, 0);
+}
+
 double calculateWavSilenceRatio(Uint8List bytes) {
   if (bytes.length <= 44) return 1;
+  return _calculatePcmSilenceRatio(bytes, 44);
+}
+
+double _calculatePcmSilenceRatio(Uint8List bytes, int startOffset) {
+  if (bytes.length <= startOffset + 1) return 1;
   final data = ByteData.sublistView(bytes);
   const samplesPerFrame = 320; // 20 ms at 16 kHz mono.
   var silentFrames = 0;
   var totalFrames = 0;
-  for (var offset = 44; offset + 1 < bytes.length; offset += samplesPerFrame * 2) {
+  for (
+    var offset = startOffset;
+    offset + 1 < bytes.length;
+    offset += samplesPerFrame * 2
+  ) {
     var sumSquares = 0.0;
     var count = 0;
     final frameEnd = math.min(bytes.length, offset + samplesPerFrame * 2);
-    for (var sampleOffset = offset; sampleOffset + 1 < frameEnd; sampleOffset += 2) {
+    for (
+      var sampleOffset = offset;
+      sampleOffset + 1 < frameEnd;
+      sampleOffset += 2
+    ) {
       final sample = data.getInt16(sampleOffset, Endian.little);
       sumSquares += sample * sample;
       count += 1;

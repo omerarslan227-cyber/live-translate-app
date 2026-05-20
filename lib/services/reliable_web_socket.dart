@@ -118,6 +118,16 @@ class ReliableWebSocketClient {
     sendText(jsonEncode(payload));
   }
 
+  void sendBinary(List<int> payload) {
+    try {
+      _channel?.sink.add(payload);
+    } catch (error) {
+      AppLogger.error('socket', 'binary send failed', {'name': name}, error);
+      onError?.call(error);
+      _scheduleReconnect('send_binary_exception');
+    }
+  }
+
   void sendText(String payload) {
     try {
       _channel?.sink.add(payload);

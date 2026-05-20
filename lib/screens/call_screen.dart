@@ -1138,6 +1138,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
           if (await file.exists()) {
             final fileBytes = await file.readAsBytes();
             final rms = calculateWavRms(fileBytes);
+            final durationSeconds = calculateWavDurationSeconds(fileBytes);
+            final silenceRatio = calculateWavSilenceRatio(fileBytes);
             _lastAudioBytes = fileBytes.length;
             _lastAudioRms = rms.round();
             _voiceLog('Audio recorded', {
@@ -1145,18 +1147,22 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               'bytes': fileBytes.length,
               'format': 'pcm16wav',
               'sampleRate': 16000,
+              'channels': 1,
+              'durationSeconds': durationSeconds,
               'rms': rms,
+              'silenceRatio': silenceRatio,
             });
-            if (fileBytes.length < 12000) {
+            if (fileBytes.length < 12000 || durationSeconds < 1.0) {
               if (mounted) {
                 setState(() => statusText = 'Mikrofon sesi algılanmadı');
               }
               continue;
             }
-            if (rms < 90) {
+            if (rms < 90 || (silenceRatio > 0.92 && rms < 420)) {
               if (mounted) {
                 setState(() => statusText = 'Ses çok düşük algılandı');
               }
+              continue;
             }
             final contextText = [
               finalSubtitleText,
@@ -1217,7 +1223,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       enableNoiseSuppression: true,
       enableEchoCancellation: true,
     );
-    await Future.delayed(const Duration(milliseconds: 700));
+    await Future.delayed(const Duration(milliseconds: 1250));
     return _recorder.stopRecorder();
   }
 
@@ -1232,6 +1238,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       if (!await file.exists()) return false;
       final fileBytes = await file.readAsBytes();
       final rms = calculateWavRms(fileBytes);
+      final durationSeconds = calculateWavDurationSeconds(fileBytes);
+      final silenceRatio = calculateWavSilenceRatio(fileBytes);
       _lastAudioBytes = fileBytes.length;
       _lastAudioRms = rms.round();
       _voiceLog('Audio recorded after recorder retry', {
@@ -1239,9 +1247,17 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         'bytes': fileBytes.length,
         'format': 'pcm16wav',
         'sampleRate': 16000,
+        'channels': 1,
+        'durationSeconds': durationSeconds,
         'rms': rms,
+        'silenceRatio': silenceRatio,
       });
-      if (fileBytes.length < 12000) return true;
+      if (fileBytes.length < 12000 ||
+          durationSeconds < 1.0 ||
+          rms < 90 ||
+          (silenceRatio > 0.92 && rms < 420)) {
+        return true;
+      }
       final contextText = [
         finalSubtitleText,
         partialSubtitleText,
@@ -2871,4 +2887,34 @@ class _ChatMessage {
     required this.translatedText,
     required this.isMine,
   });
+}
+
+double calculateWavDurationSeconds(Uint8List bytes) {
+  if (bytes.length <= 44) return 0;
+  final pcmBytes = bytes.length - 44;
+  return pcmBytes / (16000 * 1 * 2);
+}
+
+double calculateWavSilenceRatio(Uint8List bytes) {
+  if (bytes.length <= 44) return 1;
+  final data = ByteData.sublistView(bytes);
+  const samplesPerFrame = 320; // 20 ms at 16 kHz mono.
+  var silentFrames = 0;
+  var totalFrames = 0;
+  for (var offset = 44; offset + 1 < bytes.length; offset += samplesPerFrame * 2) {
+    var sumSquares = 0.0;
+    var count = 0;
+    final frameEnd = math.min(bytes.length, offset + samplesPerFrame * 2);
+    for (var sampleOffset = offset; sampleOffset + 1 < frameEnd; sampleOffset += 2) {
+      final sample = data.getInt16(sampleOffset, Endian.little);
+      sumSquares += sample * sample;
+      count += 1;
+    }
+    if (count == 0) continue;
+    final rms = math.sqrt(sumSquares / count);
+    if (rms < 420) silentFrames += 1;
+    totalFrames += 1;
+  }
+  if (totalFrames == 0) return 1;
+  return silentFrames / totalFrames;
 }

@@ -1025,7 +1025,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               'audioBytes': data['audioBytes'],
               'format': data['format'],
             });
-            if ((_lastTotalMs ?? 0) > 850) {
+            if ((_lastTotalMs ?? 0) > 1200) {
               _voiceLog('Discard stale subtitle result', {
                 'totalMs': _lastTotalMs,
                 'sourceLang': data['source_language'] ?? data['sourceLang'],
@@ -1184,7 +1184,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       codec: Codec.pcm16,
       numChannels: 1,
       sampleRate: 16000,
-      bufferSize: 6400,
+      bufferSize: 14400,
       audioSource: AudioSource.voice_communication,
       enableVoiceProcessing: true,
       enableNoiseSuppression: true,
@@ -1208,7 +1208,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
       'rms': rms,
       'silenceRatio': silenceRatio,
     });
-    if (durationSeconds < 0.18 || rms < 90 || silenceRatio > 0.98) {
+    if (durationSeconds < 0.3 || rms < 70 || silenceRatio > 0.995) {
       return;
     }
     _translateChannel?.sendBinary(pcm);

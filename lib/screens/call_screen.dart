@@ -469,6 +469,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   final FlutterTts _tts = FlutterTts();
   final TextEditingController _chatController = TextEditingController();
+  final ValueNotifier<CaptionState> _captionNotifier =
+      ValueNotifier<CaptionState>(CaptionState.empty);
   StreamController<Uint8List>? _subtitlePcmStream;
   StreamSubscription<Uint8List>? _subtitlePcmSubscription;
 
@@ -1025,7 +1027,8 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               'audioBytes': data['audioBytes'],
               'format': data['format'],
             });
-            if ((_lastTotalMs ?? 0) > 1200) {
+            final isFinalCaption = data['is_final'] != false;
+            if ((_lastTotalMs ?? 0) > 1200 && !isFinalCaption) {
               _voiceLog('Discard stale subtitle result', {
                 'totalMs': _lastTotalMs,
                 'sourceLang': data['source_language'] ?? data['sourceLang'],
@@ -1045,6 +1048,14 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
             }
             return;
           }
+          if (mounted && data['type'] == 'limit_reached') {
+            setState(() {
+              subtitlesOn = false;
+              statusText = 'Ãœcretsiz sÃ¼re doldu. Devam etmek iÃ§in Pro gerekli.';
+            });
+            _stopSubtitleRecording();
+            return;
+          }
           final hasModernCaption = data['type'] == 'caption';
           final translatedValue = data['translation'] ?? data['translated'];
           if (mounted && (translatedValue != null || hasModernCaption)) {
@@ -1056,6 +1067,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                 .toString()
                 .trim();
             final translated = (translatedValue ?? '').toString().trim();
+            final degraded = data['degraded'] == true;
             _voiceLog('STT/translation result', {
               'stage': stage,
               'originalLength': original.length,
@@ -1083,6 +1095,13 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
                 }
               }
             });
+
+            _updateCaptionOverlay(
+              original: original,
+              translated: translated,
+              isFinal: stage == 'final',
+              degraded: degraded,
+            );
 
             if (original.isNotEmpty || translated.isNotEmpty) {
               _forwardSubtitleUpdate(
@@ -1261,6 +1280,20 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     });
   }
 
+  void _updateCaptionOverlay({
+    required String original,
+    required String translated,
+    required bool isFinal,
+    bool degraded = false,
+  }) {
+    _captionNotifier.value = CaptionState(
+      sourceText: original,
+      translatedText: translated,
+      isFinal: isFinal,
+      degraded: degraded,
+    );
+  }
+
   void _applyRemoteSubtitle(Map<String, dynamic> data) {
     final stage = (data['stage'] ?? 'partial').toString();
     final original = (data['original'] ?? '').toString().trim();
@@ -1285,6 +1318,12 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
         }
       }
     });
+
+    _updateCaptionOverlay(
+      original: original,
+      translated: translated,
+      isFinal: stage == 'final',
+    );
 
     if (stage == 'final' && translated.isNotEmpty) {
       unawaited(
@@ -1814,6 +1853,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
     _tts.stop();
     _localStream?.getTracks().forEach((track) => track.stop());
     _localStream?.dispose();
+    _captionNotifier.dispose();
     _chatController.dispose();
     _recorder.closeRecorder();
     _localRenderer.dispose();
@@ -1926,6 +1966,7 @@ class _CallScreenState extends State<CallScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
+          SubtitleOverlay(captionNotifier: _captionNotifier),
           if (remoteReady)
             Positioned(
               left: horizontal,

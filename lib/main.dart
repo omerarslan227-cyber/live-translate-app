@@ -30,6 +30,7 @@ import 'services/usage_service.dart';
 import 'services/webrtc_config_service.dart';
 import 'widgets/connection_status_pill.dart';
 import 'widgets/glass_card.dart';
+import 'widgets/subtitle_overlay.dart';
 
 part 'core/app_data.dart';
 part 'screens/home_screen.dart';

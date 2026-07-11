@@ -43,6 +43,7 @@ class ReliableWebSocketClient {
   final Duration heartbeatTimeout;
   final Duration maxReconnectDelay;
   final bool heartbeatEnabled;
+  final int maxBinaryPayloadBytes;
 
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
@@ -66,6 +67,7 @@ class ReliableWebSocketClient {
     this.heartbeatTimeout = const Duration(seconds: 12),
     this.maxReconnectDelay = const Duration(seconds: 20),
     this.heartbeatEnabled = true,
+    this.maxBinaryPayloadBytes = 2000000,
   });
 
   BridgeSocketStatus get status => _status;
@@ -89,8 +91,9 @@ class ReliableWebSocketClient {
         'uri': _safeUriForLogs(uri),
         'attempt': _attempt + 1,
       });
-      _channel = WebSocketChannel.connect(uri);
-      _subscription = _channel!.stream.listen(
+      final channel = WebSocketChannel.connect(uri);
+      _channel = channel;
+      _subscription = channel.stream.listen(
         _handleMessage,
         onError: (error) {
           AppLogger.error('socket', 'stream error', {'name': name}, error);
@@ -100,13 +103,21 @@ class ReliableWebSocketClient {
         onDone: () => _scheduleReconnect('stream_done'),
         cancelOnError: true,
       );
-      _attempt = 0;
-      _lastMessageAt = DateTime.now();
-      final wasReconnect = _hasConnectedOnce;
-      _hasConnectedOnce = true;
-      _setStatus(BridgeSocketStatus.connected);
-      if (wasReconnect) onReconnected?.call();
-      _startHeartbeat();
+      channel.ready.then((_) {
+        if (_closedByUser || _channel != channel) return;
+        _attempt = 0;
+        _lastMessageAt = DateTime.now();
+        final wasReconnect = _hasConnectedOnce;
+        _hasConnectedOnce = true;
+        _setStatus(BridgeSocketStatus.connected);
+        if (wasReconnect) onReconnected?.call();
+        _startHeartbeat();
+      }).catchError((Object error) {
+        if (_closedByUser || _channel != channel) return;
+        AppLogger.error('socket', 'connect failed', {'name': name}, error);
+        onError?.call(error);
+        _scheduleReconnect('connect_failed');
+      });
     } catch (error) {
       AppLogger.error('socket', 'connect failed', {'name': name}, error);
       onError?.call(error);
@@ -119,6 +130,18 @@ class ReliableWebSocketClient {
   }
 
   void sendBinary(List<int> payload) {
+    if (payload.length > maxBinaryPayloadBytes) {
+      final error = StateError(
+        'Binary payload too large: ${payload.length} > $maxBinaryPayloadBytes',
+      );
+      AppLogger.warn('socket', 'binary payload rejected', {
+        'name': name,
+        'bytes': payload.length,
+        'maxBytes': maxBinaryPayloadBytes,
+      });
+      onError?.call(error);
+      return;
+    }
     try {
       _channel?.sink.add(payload);
     } catch (error) {

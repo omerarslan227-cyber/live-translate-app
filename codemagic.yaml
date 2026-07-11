@@ -12,7 +12,7 @@ workflows:
         bundle_identifier: com.bridgecall.app
 
     integrations:
-      app_store_connect: codemagic
+      app_store_connect: bridgecall
 
     scripts:
       - name: Get packages

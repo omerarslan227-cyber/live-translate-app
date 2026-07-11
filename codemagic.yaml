@@ -5,6 +5,7 @@ workflows:
 
     environment:
       flutter: stable
+      xcode: 26.3
       groups:
         - bridgecall
       ios_signing:
